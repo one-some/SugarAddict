@@ -1,14 +1,29 @@
 // ==UserScript==
 // @name        SugarAddict
 // @namespace   Violentmonkey Scripts
-// @match       *://*.motoslave.net/*
+// @match       file://*/*
 // @grant       none
 // @version     1.0
 // @author      one-some
 // @description Twine/SugarCube story manipulation tool
 // ==/UserScript==
+// @match    *://*/*
 
-// *://*/*=
+
+/* TODO:
+ * Editable values
+ * "Decompile passage" -- translate into english-ish
+ * Display many types of objects (including branching objects)
+ * show variables that changed in the last turn
+ * Passage search
+ * Passage change
+ */
+
+if (!window.SugarCube) {
+  throw Error("No SugarCube :(");
+}
+
+// window.SugarCube.State.active.variables;
 
 function $e(tag, parent, attributes, insertionLocation=null) {
     let element = document.createElement(tag);
@@ -66,6 +81,7 @@ function $el(selector) {
 
 // Init
 
+const scLoaded = new Event("sc-load");
 const style = $e("style", document.head, {innerHTML: `
 :root {
   /* TODO: Make these one format pleeeeeaaaaaaaase */
@@ -77,16 +93,19 @@ const style = $e("style", document.head, {innerHTML: `
 
 #sa-window-container {
   position: fixed;
-  height: 300px;
-  width: 300px;
+  height: 400px;
+  width: 400px;
   top: 0px;
   left: 0px;
   display: flex;
   flex-direction: column;
+  z-index: 999999;
 }
 
 #sa-topbar {
   width: 100%;
+  height: 32px;
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -112,6 +131,7 @@ const style = $e("style", document.head, {innerHTML: `
   display: flex;
   flex-direction: row;
   background-color: var(--sa-window);
+  height: 100%;
 }
 
 #sa-tabbar {
@@ -136,13 +156,22 @@ const style = $e("style", document.head, {innerHTML: `
   opacity: 1.0;
 }
 
-#sa-tab-content-container { flex-grow: 1; }
+#sa-tab-content-container {
+  flex-grow: 1;
+  overflow-y: auto;
+}
 
 .sa-tab-content {
   color: white;
   font-family: monospace;
   width: 100%;
   height: 100%;
+}
+
+.sa-var-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 `});
 
@@ -168,6 +197,16 @@ const tabContentContainer = $e("div", main, {id: "sa-tab-content-container"});
 var isMinimized = false;
 var dragOffset = null;
 
+var startInterval = setInterval(function() {
+  if (!SugarCube.State) return;
+  document.dispatchEvent(scLoaded);
+  clearInterval(startInterval);
+  console.info("SugarCube loaded")
+}, 100);
+
+var monitoringInterval = setInterval(watchForChanges, 250);
+
+
 topBar.addEventListener("mousedown", function(event) {
   topBar.classList.add("dragging");
   let boundingRect = topBar.getBoundingClientRect();
@@ -189,7 +228,7 @@ document.addEventListener("mousemove", function(event) {
 minimizeButton.addEventListener("click", function() {
   isMinimized = !isMinimized;
   minimizeButton.innerText = isMinimized ? "+" : "-";
-  main.style.display = isMinimized ? "none" : "block";
+  main.style.display = isMinimized ? "none" : "flex";
 });
 
 /* - Tabs - */
@@ -211,7 +250,35 @@ for (const [tabId, data] of Object.entries(tabs)) {
 
   let tabContent = $e("div", tabContentContainer, {"tab-id": tabId, classes: ["sa-tab-content"], "style.display": "none"})
   tabs[tabId].content = tabContent;
-  tabContent.innerText = tabId;
 }
 
 tabBar.children[0].click();
+
+/* - Change Watcher - */
+let cachedChanges = {};
+function watchForChanges() {
+  let title = window.SugarCube.State.active.title;
+  if (title !== cachedChanges.title) {
+    document.dispatchEvent(new CustomEvent(
+      "sc-passagechange",
+      {detail: title}
+    ))
+    cachedChanges.title = title;
+  }
+}
+
+/* - Twine Vars - */
+
+document.addEventListener("sc-load", function() {
+  for (const [key, value] of Object.entries(window.SugarCube.State.active.variables)) {
+    let container = $e("div", tabs.vars.content, {classes: ["sa-var-container"]});
+    let keyLabel = $e("p", container, {innerText: key});
+    let valueLabel = $e("p", container, {innerText: value});
+  }
+});
+
+/* - Passage Data - */
+const currentPassageLabel = $e("p", tabs.passages.content);
+document.addEventListener("sc-passagechange", function(event) {
+  currentPassageLabel.innerText = event.detail;
+});
