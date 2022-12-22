@@ -7,14 +7,11 @@
 // @author      one-some
 // @description Twine/SugarCube story manipulation tool
 // ==/UserScript==
-// @match    *://*/*
 
 
 /* TODO:
  * "Decompile passage" -- translate into english-ish
  * show variables that changed in the last turn
- * Passage search
- * Passage change
  */
 
 if (!window.SugarCube) {
@@ -24,54 +21,54 @@ if (!window.SugarCube) {
 // window.SugarCube.State.active.variables;
 
 function $e(tag, parent, attributes, insertionLocation=null) {
-    let element = document.createElement(tag);
+  let element = document.createElement(tag);
 
-    if (!attributes) attributes = {};
+  if (!attributes) attributes = {};
 
-    if ("classes" in attributes) {
-        if (!Array.isArray(attributes.classes)) throw Error("Classes was not array!");
-        for (const className of attributes.classes) {
-            element.classList.add(className);
-        }
-        delete attributes.classes;
+  if ("classes" in attributes) {
+    if (!Array.isArray(attributes.classes)) throw Error("Classes was not array!");
+    for (const className of attributes.classes) {
+      element.classList.add(className);
+    }
+    delete attributes.classes;
+  }
+
+  for (const [attribute, value] of Object.entries(attributes)) {
+    if (attribute.includes(".")) {
+      let ref = element;
+      const parts = attribute.split(".");
+
+      for (const part of parts.slice(0, -1)) {
+        ref = ref[part];
+      }
+
+      ref[parts[parts.length - 1]] = value;
+      continue;
     }
 
-    for (const [attribute, value] of Object.entries(attributes)) {
-        if (attribute.includes(".")) {
-            let ref = element;
-            const parts = attribute.split(".");
-
-            for (const part of parts.slice(0, -1)) {
-                ref = ref[part];
-            }
-
-            ref[parts[parts.length - 1]] = value;
-            continue;
-        }
-
-        if (attribute in element) {
-            element[attribute] = value;
-        } else {
-            element.setAttribute(attribute, value);
-        }
-    }
-
-    if (!parent) return element;
-
-    if (insertionLocation && Object.keys(insertionLocation).length) {
-        let [placement, target] = Object.entries(insertionLocation)[0];
-        if (placement === "before") {
-            parent.insertBefore(element, target);
-        } else if (placement === "after") {
-            parent.insertBefore(element, target.nextSibling);
-        } else {
-            throw Error(`Bad placement ${placement}`);
-        }
+    if (attribute in element) {
+      element[attribute] = value;
     } else {
-        parent.appendChild(element);
+      element.setAttribute(attribute, value);
     }
+  }
 
-    return element;
+  if (!parent) return element;
+
+  if (insertionLocation && Object.keys(insertionLocation).length) {
+    let [placement, target] = Object.entries(insertionLocation)[0];
+    if (placement === "before") {
+      parent.insertBefore(element, target);
+    } else if (placement === "after") {
+      parent.insertBefore(element, target.nextSibling);
+    } else {
+      throw Error(`Bad placement ${placement}`);
+    }
+  } else {
+    parent.appendChild(element);
+  }
+
+  return element;
 }
 function $el(selector) {
   return document.querySelector(selector);
@@ -193,6 +190,29 @@ const style = $e("style", document.head, {innerHTML: `
 }
 
 .sa-angry { color: red; }
+.sa-hidden { display: none !important; }
+
+.sa-passage {
+  display: flex;
+  justify-content: space-between;
+  background-color: rgb(28, 28, 28);
+}
+
+[tab-id="passages"] {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+#sa-passage-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.sa-passage.sa-shiny {
+  background-color: rgb(38, 38, 38);
+}
 `});
 
 const windowContainer = $e("div", document.body, {id: "sa-window-container"});
@@ -259,10 +279,10 @@ minimizeButton.addEventListener("click", function() {
 
 function switchTab(tabId) {
   for (const tabContent of document.querySelectorAll(".sa-tab-content")) {
-    tabContent.style.display = "none";
+    tabContent.classList.add("sa-hidden");
   }
   const coolTab = $el(`.sa-tab-content[tab-id="${tabId}"]`);
-  coolTab.style.display = "block";
+  coolTab.classList.remove("sa-hidden");
 }
 
 for (const [tabId, data] of Object.entries(tabs)) {
@@ -280,7 +300,7 @@ for (const [tabId, data] of Object.entries(tabs)) {
     tab.classList.add("sa-selected");
   });
 
-  let tabContent = $e("div", tabContentContainer, {"tab-id": tabId, classes: ["sa-tab-content"], "style.display": "none"})
+  let tabContent = $e("div", tabContentContainer, {"tab-id": tabId, classes: ["sa-tab-content", "sa-hidden"]})
   tabs[tabId].content = tabContent;
 }
 
@@ -485,10 +505,63 @@ document.addEventListener("sc-load", function() {
     renderVariable(key, value, tabs.vars.content, i);
     i++;
   }
+
+  initPassages();
 });
 
 /* - Passage Data - */
-const currentPassageLabel = $e("p", tabs.passages.content);
+let currentPassage = null;
+const currentPassageLabel = $e("p", tabs.passages.content, {classes: ["sa-clickable"]});
 document.addEventListener("sc-passagechange", function(event) {
-  currentPassageLabel.innerText = event.detail;
+  currentPassage = event.detail;
+  currentPassageLabel.innerText = `Current: ${event.detail}`;
+});
+
+currentPassageLabel.addEventListener("click", function() {
+  window.SugarCube.Engine.play(currentPassage);
+})
+
+const passageContainer = $e("div", tabs.passages.content, {id: "sa-passage-container"});
+const passageSearchbar = $e("input", tabs.passages.content);
+
+function initPassages() {
+  for (const [name, data] of Object.entries(window.SugarCube.Story.passages)) {
+    let passage = $e("div", passageContainer, {classes: ["sa-passage"]});
+    $e("span", passage, {innerText: name, classes: ["sa-passage-name"]});
+    let jumpButton = $e("span", passage, {innerText: "Jump", classes: ["sa-clickable"]});
+
+    jumpButton.addEventListener("click", function() {
+      window.SugarCube.Engine.play(name);
+    });
+  }
+}
+
+function processForSearch(string) {
+  string = string.toLowerCase();
+  string = string.replaceAll(/\s/g, "");
+  return string;
+}
+
+function updatePassageVisualPolarity() {
+  // This really sucks but there aren't a lot of better solutions. :(
+  for (const [i, passageContainer] of Object.entries(document.querySelectorAll(".sa-passage:not(.sa-hidden)"))) {
+    if (i % 2 === 0) {
+      passageContainer.classList.add("sa-shiny");
+    } else {
+      passageContainer.classList.remove("sa-shiny");
+    }
+  }
+}
+
+passageSearchbar.addEventListener("input", function() {
+  let query = processForSearch(passageSearchbar.value);
+  for (const passageContainer of document.getElementsByClassName("sa-passage")) {
+    let name = passageContainer.querySelector(".sa-passage-name").innerText;
+    if (!query || processForSearch(name).includes(query)) {
+      passageContainer.classList.remove("sa-hidden");
+    } else {
+      passageContainer.classList.add("sa-hidden");
+    }
+  }
+  updatePassageVisualPolarity();
 });
