@@ -11,9 +11,7 @@
 
 
 /* TODO:
- * Editable values
  * "Decompile passage" -- translate into english-ish
- * Display many types of objects (including branching objects)
  * show variables that changed in the last turn
  * Passage search
  * Passage change
@@ -93,7 +91,6 @@ const style = $e("style", document.head, {innerHTML: `
 
 #sa-window-container {
   position: fixed;
-  height: 400px;
   width: 600px;
   top: 0px;
   left: 0px;
@@ -131,7 +128,7 @@ const style = $e("style", document.head, {innerHTML: `
   display: flex;
   flex-direction: row;
   background-color: var(--sa-window);
-  height: 100%;
+  height: 400px;
 }
 
 #sa-tabbar {
