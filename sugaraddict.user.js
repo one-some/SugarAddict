@@ -7,11 +7,14 @@
 // @author      one-some
 // @description Twine/SugarCube story manipulation tool
 // ==/UserScript==
+// @match    *://*/*
 
 
 /* TODO:
  * "Decompile passage" -- translate into english-ish
  * show variables that changed in the last turn
+ * Passage search
+ * Passage change
  */
 
 if (!window.SugarCube) {
@@ -230,6 +233,7 @@ const tabBar = $e("div", main, {id: "sa-tabbar"});
 const tabs = {
   "vars": {icon: "🔧"},
   "passages": {icon: "📔"},
+  "decompiler": {icon: "💻"}, // Yes I know this isn't decompiling anything but it sounds cool
 };
 
 const tabContentContainer = $e("div", main, {id: "sa-tab-content-container"});
@@ -564,4 +568,14 @@ passageSearchbar.addEventListener("input", function() {
     }
   }
   updatePassageVisualPolarity();
+});
+
+/* - Decompiler - */
+
+const codeContainer = $e("div", tabs.decompiler.content);
+
+document.addEventListener("sc-passagechange", function(event) {
+  let passage = window.SugarCube.Story.passages[event.detail];
+  console.log(passage);
+  codeContainer.innerText = passage.element.innerText;
 });
