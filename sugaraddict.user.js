@@ -1,27 +1,16 @@
 // ==UserScript==
 // @name        SugarAddict
-// @namespace   Violentmonkey Scripts
 // @match       *://*/*
+// @match       file://*/*
 // @grant       none
 // @version     1.0
 // @author      one-some
 // @description Twine/SugarCube story manipulation tool
 // ==/UserScript==
-// @match    *://*/*
-
-
-/* TODO:
- * "Decompile passage" -- translate into english-ish
- * show variables that changed in the last turn
- * Passage search
- * Passage change
- */
 
 if (!window.SugarCube) {
-  throw Error("No SugarCube :(");
+  throw Error("No SugarCube :( SugarAddict aborting!");
 }
-
-// window.SugarCube.State.active.variables;
 
 function $e(tag, parent, attributes, insertionLocation=null) {
   let element = document.createElement(tag);
