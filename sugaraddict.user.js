@@ -514,6 +514,14 @@ document.addEventListener("sc-load", function() {
 });
 
 /* - Passage Data - */
+function getPassages() {
+  let ret = {};
+  for (const dat of window.SugarCube.Story.lookupWith(() => true)) {
+    ret[dat.title] = dat;
+  }
+  return ret;
+}
+
 let currentPassage = null;
 const currentPassageLabel = $e("p", tabs.passages.content, {classes: ["sa-clickable"]});
 document.addEventListener("sc-passagechange", function(event) {
@@ -529,7 +537,7 @@ const passageContainer = $e("div", tabs.passages.content, {id: "sa-passage-conta
 const passageSearchbar = $e("input", tabs.passages.content);
 
 function initPassages() {
-  for (const [name, data] of Object.entries(window.SugarCube.Story.passages)) {
+  for (const [name, data] of Object.entries(getPassages())) {
     let passage = $e("div", passageContainer, {classes: ["sa-passage"]});
     $e("span", passage, {innerText: name, classes: ["sa-passage-name"]});
     let jumpButton = $e("span", passage, {innerText: "Jump", classes: ["sa-clickable"]});
@@ -575,7 +583,7 @@ passageSearchbar.addEventListener("input", function() {
 const codeContainer = $e("div", tabs.decompiler.content);
 
 document.addEventListener("sc-passagechange", function(event) {
-  let passage = window.SugarCube.Story.passages[event.detail];
+  let passage = getPassages()[event.detail];
   console.log(passage);
   codeContainer.innerText = passage.element.innerText;
 });
