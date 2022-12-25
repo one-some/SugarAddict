@@ -304,7 +304,7 @@ let cachedChanges = {};
 
 function findVariableChanges(variables) {
   if (!cachedChanges.flatVars) {
-    cachedChanges.flatVars = structuredClone(variables);
+    cachedChanges.flatVars = structuredClone(flattenKV(variables));
     return {};
   }
 
@@ -348,6 +348,7 @@ function isObjectFlattenable(object) {
 }
 
 function flattenKV(object, key=null) {
+  // Ignores some values completely (see isObjectFlattenable)
   let flat = {};
   let kBase = key ? `${key}.` : "";
 
