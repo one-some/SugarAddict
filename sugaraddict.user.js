@@ -303,19 +303,18 @@ tabBar.children[0].click();
 let cachedChanges = {};
 
 function findVariableChanges(variables) {
-  if (!cachedChanges.variables) {
-    cachedChanges.variables = structuredClone(variables);
+  if (!cachedChanges.flatVars) {
+    cachedChanges.flatVars = structuredClone(variables);
     return {};
   }
 
-  let before = flattenKV(cachedChanges.variables);
   let after = flattenKV(variables);
 
   let changes = {};
   for (const [k, v] of Object.entries(after)) {
-    if (before[k] !== v) changes[k] = v;
+    if (cachedChanges.flatVars[k] !== v) changes[k] = v;
   }
-  cachedChanges.variables = structuredClone(variables);
+  cachedChanges.flatVars = after;
 
   return changes;
 }
@@ -343,6 +342,11 @@ function watchForChanges() {
 
 /* - Twine Vars - */
 
+function isObjectFlattenable(object) {
+  if (typeof object === "function") return false;
+  return true;
+}
+
 function flattenKV(object, key=null) {
   let flat = {};
   let kBase = key ? `${key}.` : "";
@@ -350,9 +354,11 @@ function flattenKV(object, key=null) {
   for (let [k, v] of Object.entries(object)) {
     if (typeof v === "object" && v !== null) {
       for (const [flatK, flatV] of Object.entries(flattenKV(v, k))) {
+        if (!isObjectFlattenable(flatV)) continue;
         flat[kBase + flatK] = flatV;
       }
     } else {
+      if (!isObjectFlattenable(v)) continue;
       flat[kBase + k] = v;
     }
   }
