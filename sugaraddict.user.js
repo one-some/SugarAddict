@@ -205,6 +205,22 @@ const style = $e("style", document.head, {innerHTML: `
 .sa-passage.sa-shiny {
   background-color: rgb(38, 38, 38);
 }
+
+#sa-nav-container {
+  display: flex;
+  flex-direction: row;
+  column-gap: 10px;
+}
+
+.sa-nav-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1;
+  height: 64px;
+  background-color: #2577ce;
+  cursor: pointer;
+}
 `});
 
 const windowContainer = $e("div", document.body, {id: "sa-window-container"});
@@ -220,6 +236,7 @@ const main = $e("div", windowContainer, {id: "sa-main"});
 
 const tabBar = $e("div", main, {id: "sa-tabbar"});
 const tabs = {
+  "home": {icon: "🏠"},
   "vars": {icon: "🔧"},
   "passages": {icon: "📔"},
   "decompiler": {icon: "💻"}, // Yes I know this isn't decompiling anything but it sounds cool
@@ -336,7 +353,7 @@ function watchForChanges() {
   for (const [k,v] of Object.entries(changes)) {
     let el = $el(`[var-path="${k}"] > .sa-var-value`);
     if (el) el.innerText = v;
-    console.log(el, k, "->", v);
+    //console.log(el, k, "->", v);
   }
 }
 
@@ -583,3 +600,18 @@ document.addEventListener("sc-passagechange", function(event) {
   console.log(passage);
   codeContainer.innerText = passage.element.innerText;
 });
+
+/* - Home - */
+
+const homeTitle = $e("p", tabs.home.content, {id: "sa-home-title"});
+
+document.addEventListener("sc-load", function() {
+  homeTitle.innerText = window.SugarCube.Story.title;
+});
+
+const navContainer = $e("div", tabs.home.content, {id: "sa-nav-container"});
+const navBack = $e("div", navContainer, {innerText: "<--", classes: ["sa-nav-button"]})
+const navForward = $e("div", navContainer, {innerText: "-->", classes: ["sa-nav-button"]})
+
+navBack.addEventListener("click", function() { window.SugarCube.State.backward(); });
+navForward.addEventListener("click", function() { window.SugarCube.State.forward(); });
