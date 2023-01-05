@@ -12,7 +12,7 @@ if (!window.SugarCube) {
   throw Error("No SugarCube :( SugarAddict aborting!");
 }
 
-function $e(tag, parent, attributes, insertionLocation=null) {
+function $e(tag, parent, attributes, insertionLocation = null) {
   let element = document.createElement(tag);
 
   if (!attributes) attributes = {};
@@ -69,7 +69,8 @@ function $el(selector) {
 // Init
 
 const scLoaded = new Event("sc-load");
-const style = $e("style", document.head, {innerHTML: `
+const style = $e("style", document.head, {
+  innerHTML: `
 :root {
   /* TODO: Make these one format pleeeeeaaaaaaaase */
   --sa-window: rgb(28, 28, 28);
@@ -223,32 +224,32 @@ const style = $e("style", document.head, {innerHTML: `
 }
 `});
 
-const windowContainer = $e("div", document.body, {id: "sa-window-container"});
-const topBar = $e("div", windowContainer, {id: "sa-topbar"});
+const windowContainer = $e("div", document.body, { id: "sa-window-container" });
+const topBar = $e("div", windowContainer, { id: "sa-topbar" });
 
 // Hack
 $e("spacer", topBar);
 
-const label = $e("span", topBar, {innerText: "SugarAddict"});
-const minimizeButton = $e("span", topBar, {innerText: "-", id: "sa-minimize"});
+const label = $e("span", topBar, { innerText: "SugarAddict" });
+const minimizeButton = $e("span", topBar, { innerText: "-", id: "sa-minimize" });
 
-const main = $e("div", windowContainer, {id: "sa-main"});
+const main = $e("div", windowContainer, { id: "sa-main" });
 
-const tabBar = $e("div", main, {id: "sa-tabbar"});
+const tabBar = $e("div", main, { id: "sa-tabbar" });
 const tabs = {
-  "home": {icon: "🏠"},
-  "vars": {icon: "🔧"},
-  "passages": {icon: "📔"},
-  "decompiler": {icon: "💻"}, // Yes I know this isn't decompiling anything but it sounds cool
+  "home": { icon: "🏠" },
+  "vars": { icon: "🔧" },
+  "passages": { icon: "📔" },
+  "decompiler": { icon: "💻" }, // Yes I know this isn't decompiling anything but it sounds cool
 };
 
-const tabContentContainer = $e("div", main, {id: "sa-tab-content-container"});
+const tabContentContainer = $e("div", main, { id: "sa-tab-content-container" });
 
 var isMinimized = false;
 var dragOffset = null;
 var dragEl = null;
 
-var startInterval = setInterval(function() {
+var startInterval = setInterval(function () {
   if (!SugarCube.State) return;
   document.dispatchEvent(scLoaded);
   clearInterval(startInterval);
@@ -267,19 +268,19 @@ function startWindowDrag(event) {
 topBar.addEventListener("mousedown", startWindowDrag);
 tabBar.addEventListener("mousedown", startWindowDrag);
 
-document.addEventListener("mouseup", function(event) {
+document.addEventListener("mouseup", function (event) {
   // We don't care where the mouse is *released*.
   if (dragEl) dragEl.classList.remove("sa-dragging");
   dragOffset = null;
 });
 
-document.addEventListener("mousemove", function(event) {
+document.addEventListener("mousemove", function (event) {
   if (!dragOffset) return;
   windowContainer.style.left = `${event.clientX - dragOffset[0]}px`;
   windowContainer.style.top = `${event.clientY - dragOffset[1]}px`;
 });
 
-minimizeButton.addEventListener("click", function() {
+minimizeButton.addEventListener("click", function () {
   isMinimized = !isMinimized;
   minimizeButton.innerText = isMinimized ? "+" : "-";
   main.style.display = isMinimized ? "none" : "flex";
@@ -296,21 +297,21 @@ function switchTab(tabId) {
 }
 
 for (const [tabId, data] of Object.entries(tabs)) {
-  let tab = $e("div", tabBar, {innerText: data.icon, classes: ["sa-tab-icon"]});
+  let tab = $e("div", tabBar, { innerText: data.icon, classes: ["sa-tab-icon"] });
 
-  tab.addEventListener("mousedown", function(event) {
+  tab.addEventListener("mousedown", function (event) {
     event.preventDefault();
     event.stopPropagation();
   });
 
-  tab.addEventListener("click", function(event) {
+  tab.addEventListener("click", function (event) {
     switchTab(tabId);
     const oldTab = $el(".sa-tab-icon.sa-selected");
     if (oldTab) oldTab.classList.remove("sa-selected");
     tab.classList.add("sa-selected");
   });
 
-  let tabContent = $e("div", tabContentContainer, {"tab-id": tabId, classes: ["sa-tab-content", "sa-hidden"]})
+  let tabContent = $e("div", tabContentContainer, { "tab-id": tabId, classes: ["sa-tab-content", "sa-hidden"] })
   tabs[tabId].content = tabContent;
 }
 
@@ -342,7 +343,7 @@ function watchForChanges() {
   if (title !== cachedChanges.title) {
     document.dispatchEvent(new CustomEvent(
       "sc-passagechange",
-      {detail: title}
+      { detail: title }
     ))
     cachedChanges.title = title;
   }
@@ -350,7 +351,7 @@ function watchForChanges() {
   // Variable changes
   let variables = window.SugarCube.State.active.variables;
   let changes = findVariableChanges(variables);
-  for (const [k,v] of Object.entries(changes)) {
+  for (const [k, v] of Object.entries(changes)) {
     let el = $el(`[var-path="${k}"] > .sa-var-value`);
     if (el) el.innerText = v;
     //console.log(el, k, "->", v);
@@ -364,7 +365,7 @@ function isObjectFlattenable(object) {
   return true;
 }
 
-function flattenKV(object, key=null) {
+function flattenKV(object, key = null) {
   // Ignores some values completely (see isObjectFlattenable)
   let flat = {};
   let kBase = key ? `${key}.` : "";
@@ -386,7 +387,7 @@ function flattenKV(object, key=null) {
 function getRecursionCSSColor(recursionLevel, index) {
   let v = 28 + (recursionLevel * 10);
   if (index % 2 === 0) v += 3;
-  return `rgb(${[v,v,v].join(",")})`;
+  return `rgb(${[v, v, v].join(",")})`;
 }
 
 function setVariable(path, value) {
@@ -403,7 +404,7 @@ function cast(value, type) {
   if (type === "null") return value; // ¯\_(ツ)_/¯
   if (type === "string") return value.toString();
   if (type === "boolean") {
-    const caster = {"true": true, "false": false};
+    const caster = { "true": true, "false": false };
     if (caster[value] === undefined) throw Error("Bad bool");
     return caster[value];
   }
@@ -417,7 +418,7 @@ function cast(value, type) {
   throw Error(type);
 }
 
-function renderVariable(key, value, parent, index, familyTree=null, recursionLevel=0, dimKey=false) {
+function renderVariable(key, value, parent, index, familyTree = null, recursionLevel = 0, dimKey = false) {
   familyTree = [...(familyTree || []), key];
 
   let container = $e("div", parent, {
@@ -454,35 +455,35 @@ function renderVariable(key, value, parent, index, familyTree=null, recursionLev
 
   let leftSide = $e("div", container);
 
-  let typeLabel = $e("span", leftSide, {innerText: `[${visualType}]`, classes: ["sa-var-type"]});
+  let typeLabel = $e("span", leftSide, { innerText: `[${visualType}]`, classes: ["sa-var-type"] });
 
-  let keyLabel = $e("span", leftSide, {innerText: key});
+  let keyLabel = $e("span", leftSide, { innerText: key });
   if (dimKey) keyLabel.style.opacity = "0.4";
 
   let hasChildren = (value !== null && value.constructor.name === "Object") || value instanceof Array;
-  let valueLabel = $e("span", container, {innerText: hasChildren ? ">" : value, classes: ["sa-var-value"]});
+  let valueLabel = $e("span", container, { innerText: hasChildren ? ">" : value, classes: ["sa-var-value"] });
 
   if (!hasChildren && type !== "?") {
     let knownWorking = value;
     valueLabel.setAttribute("contenteditable", "true");
 
-    valueLabel.addEventListener("keydown", function(event) {
+    valueLabel.addEventListener("keydown", function (event) {
       valueLabel.classList.remove("sa-angry");
       if (event.key === "Enter") valueLabel.blur();
     });
 
-    valueLabel.addEventListener("blur", function(event) {
+    valueLabel.addEventListener("blur", function (event) {
       try {
         let value = cast(valueLabel.innerText, type);
         setVariable(familyTree, value);
         knownWorking = value;
-      } catch(err) {
+      } catch (err) {
         valueLabel.innerText = knownWorking;
         valueLabel.classList.add("sa-angry");
       }
     });
 
-    container.addEventListener("click", function() {
+    container.addEventListener("click", function () {
       valueLabel.focus();
     });
   } else if (hasChildren) {
@@ -490,19 +491,19 @@ function renderVariable(key, value, parent, index, familyTree=null, recursionLev
     container.classList.add("sa-clickable")
 
     let dimChildKey = value instanceof Array;
-    let childContainer = $e("div", parent, {classes: ["sa-var-folder", "sa-contracted"], "style.borderLeft": "1px solid", "style.borderColor": "blue"});
+    let childContainer = $e("div", parent, { classes: ["sa-var-folder", "sa-contracted"], "style.borderLeft": "1px solid", "style.borderColor": "blue" });
     let i = 0;
     for (const [key, item] of Object.entries(value)) {
-      let cont = renderVariable(key, item, childContainer, i, familyTree, recursionLevel+1, dimChildKey);
-      cont.style.paddingLeft = `${recursionLevel+1 * 12}px`;
+      let cont = renderVariable(key, item, childContainer, i, familyTree, recursionLevel + 1, dimChildKey);
+      cont.style.paddingLeft = `${recursionLevel + 1 * 12}px`;
       i++;
     }
 
     if (!childContainer.children.length) {
-      $e("div", childContainer, {innerText: "empty", classes: ["sa-var-container", "sa-note"]})
+      $e("div", childContainer, { innerText: "empty", classes: ["sa-var-container", "sa-note"] })
     }
 
-    container.addEventListener("click", function() {
+    container.addEventListener("click", function () {
       let contracted = childContainer.classList.contains("sa-contracted");
 
       if (contracted) {
@@ -516,7 +517,7 @@ function renderVariable(key, value, parent, index, familyTree=null, recursionLev
   return container;
 }
 
-document.addEventListener("sc-load", function() {
+document.addEventListener("sc-load", function () {
   let i = 0;
   for (const [key, value] of Object.entries(window.SugarCube.State.active.variables)) {
     renderVariable(key, value, tabs.vars.content, i);
@@ -536,26 +537,26 @@ function getPassages() {
 }
 
 let currentPassage = null;
-const currentPassageLabel = $e("p", tabs.passages.content, {classes: ["sa-clickable"]});
-document.addEventListener("sc-passagechange", function(event) {
+const currentPassageLabel = $e("p", tabs.passages.content, { classes: ["sa-clickable"] });
+document.addEventListener("sc-passagechange", function (event) {
   currentPassage = event.detail;
   currentPassageLabel.innerText = `Current: ${event.detail}`;
 });
 
-currentPassageLabel.addEventListener("click", function() {
+currentPassageLabel.addEventListener("click", function () {
   window.SugarCube.Engine.play(currentPassage);
 })
 
-const passageContainer = $e("div", tabs.passages.content, {id: "sa-passage-container"});
+const passageContainer = $e("div", tabs.passages.content, { id: "sa-passage-container" });
 const passageSearchbar = $e("input", tabs.passages.content);
 
 function initPassages() {
   for (const [name, data] of Object.entries(getPassages())) {
-    let passage = $e("div", passageContainer, {classes: ["sa-passage"]});
-    $e("span", passage, {innerText: name, classes: ["sa-passage-name"]});
-    let jumpButton = $e("span", passage, {innerText: "Jump", classes: ["sa-clickable"]});
+    let passage = $e("div", passageContainer, { classes: ["sa-passage"] });
+    $e("span", passage, { innerText: name, classes: ["sa-passage-name"] });
+    let jumpButton = $e("span", passage, { innerText: "Jump", classes: ["sa-clickable"] });
 
-    jumpButton.addEventListener("click", function() {
+    jumpButton.addEventListener("click", function () {
       window.SugarCube.Engine.play(name);
     });
   }
@@ -578,7 +579,7 @@ function updatePassageVisualPolarity() {
   }
 }
 
-passageSearchbar.addEventListener("input", function() {
+passageSearchbar.addEventListener("input", function () {
   let query = processForSearch(passageSearchbar.value);
   for (const passageContainer of document.getElementsByClassName("sa-passage")) {
     let name = passageContainer.querySelector(".sa-passage-name").innerText;
@@ -591,27 +592,115 @@ passageSearchbar.addEventListener("input", function() {
   updatePassageVisualPolarity();
 });
 
+/* - Home - */
+
+const homeTitle = $e("p", tabs.home.content, { id: "sa-home-title" });
+
+document.addEventListener("sc-load", function () {
+  homeTitle.innerText = window.SugarCube.Story.title;
+});
+
+const navContainer = $e("div", tabs.home.content, { id: "sa-nav-container" });
+const navBack = $e("div", navContainer, { innerText: "<--", classes: ["sa-nav-button"] })
+const navForward = $e("div", navContainer, { innerText: "-->", classes: ["sa-nav-button"] })
+
+navBack.addEventListener("click", function () { window.SugarCube.State.backward(); });
+navForward.addEventListener("click", function () { window.SugarCube.State.forward(); });
+
 /* - Decompiler - */
 
 const codeContainer = $e("div", tabs.decompiler.content);
 
-document.addEventListener("sc-passagechange", function(event) {
+document.addEventListener("sc-passagechange", function (event) {
   let passage = getPassages()[event.detail];
   console.log(passage);
+  console.info(tokenizePassage(passage.element.innerText));
   codeContainer.innerText = passage.element.innerText;
 });
 
-/* - Home - */
+function tokenizePassage(text) {
+  // work SMART not WELL (Read: this is a silly but effective(??) hack)
+  text = text.replaceAll('"', '\\"');
+  text = text.replaceAll("\\'", "'");
+  //text = text.replaceAll("\\", "\\\\");
+  text = text.replaceAll("<</", '{"origin": "twine","direction":"close","content":"');
+  text = text.replaceAll("<<", '{"origin": "twine","direction":"open","content":"');
+  text = text.replaceAll(">>", '"},');
+  text = text.replaceAll("</", '{"origin": "html","direction":"close","content":"');
+  text = text.replaceAll("<", '{"origin": "html","direction":"open","content":"');
+  text = text.replaceAll(">", '"},');
 
-const homeTitle = $e("p", tabs.home.content, {id: "sa-home-title"});
+  // Get rid of last comma
+  let jsonBuffer = `[${text.slice(0, -1)}]`;
+  console.log(jsonBuffer);
+  let parsed = JSON.parse(jsonBuffer);
+  console.log(parsed);
 
-document.addEventListener("sc-load", function() {
-  homeTitle.innerText = window.SugarCube.Story.title;
-});
+  let breadcrumbTrail = [];
 
-const navContainer = $e("div", tabs.home.content, {id: "sa-nav-container"});
-const navBack = $e("div", navContainer, {innerText: "<--", classes: ["sa-nav-button"]})
-const navForward = $e("div", navContainer, {innerText: "-->", classes: ["sa-nav-button"]})
+  for (const [i, parseNode] of Object.entries(parsed)) {
+    parsed[i].type = parseNode.content.split(" ")[0]
+  }
 
-navBack.addEventListener("click", function() { window.SugarCube.State.backward(); });
-navForward.addEventListener("click", function() { window.SugarCube.State.forward(); });
+  function doesClose(type) {
+    // uuuuuuh hack
+    for (const parseNode of parsed) {
+      if (parseNode.type === type && parseNode.direction === "close") return true;
+    }
+    return false;
+  }
+
+  let nodes = [];
+
+  function getCurrentAdoptingParent() {
+    if (!nodes.length) return nodes;
+    let possibleParent = nodes[nodes.length - 1];
+
+    let goodParents = [];
+
+    while (possibleParent) {
+      if (!possibleParent.completed) goodParents.push(possibleParent);
+      possibleParent = possibleParent.children[possibleParent.children - 1];
+    }
+    console.log(goodParents);
+    if (!goodParents.length) throw new Error("Nobody wants to adopt :(");
+
+    // Deepest accepting parent
+    return goodParents[goodParents.length - 1].children;
+  }
+
+  for (const parseNode of parsed) {
+    if (parseNode.direction === "open") {
+      let nodeCompleted = !doesClose(parseNode.type);
+      let parentReference = getCurrentAdoptingParent();
+
+      let node = {
+        origin: parseNode.origin,
+        type: parseNode.type,
+        content: parseNode.content,
+        completed: nodeCompleted,
+        children: []
+      };
+      parentReference.push(node)
+
+      if (nodeCompleted) continue;
+
+      breadcrumbTrail.push({origin: parseNode.origin, type: parseNode.type, node: node});
+      console.log("entering", breadcrumbTrail);
+    } else {
+      // Closing
+      console.log(parseNode)
+      let lastBreadcrumb = breadcrumbTrail[breadcrumbTrail.length - 1];
+
+      if (lastBreadcrumb.origin !== parseNode.origin) throw new Error(`Origin mismatch: breadcrumb ${lastBreadcrumb.origin}, parsenode ${parseNode.origin}`);
+      if (lastBreadcrumb.type !== parseNode.type) throw new Error(`Type mismatch: breadcrumb ${lastBreadcrumb.type}, parsenode ${parseNode.type}`);
+
+      lastBreadcrumb.node.completed = true;
+
+      breadcrumbTrail = breadcrumbTrail.slice(0, -1);
+      console.log("exiting");
+    }
+  }
+
+  return nodes;
+}
