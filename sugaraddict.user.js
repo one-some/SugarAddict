@@ -8,9 +8,9 @@
 // @description Twine/SugarCube story manipulation tool
 // ==/UserScript==
 
-if (!window.SugarCube) {
-  throw Error("No SugarCube :( SugarAddict aborting!");
-}
+function init() {
+console.info("[SugarAddict] initalizing...")
+/* BEGIN SUGARADDICT */
 
 function $e(tag, parent, attributes, insertionLocation = null) {
   let element = document.createElement(tag);
@@ -239,6 +239,7 @@ const tabBar = $e("div", main, { id: "sa-tabbar" });
 const tabs = {
   "home": { icon: "🏠" },
   "vars": { icon: "🔧" },
+  "varwatch": { icon: "🔴" },
   "passages": { icon: "📔" },
   "decompiler": { icon: "💻" }, // Yes I know this isn't decompiling anything but it sounds cool
 };
@@ -614,7 +615,7 @@ const codeContainer = $e("div", tabs.decompiler.content);
 document.addEventListener("sc-passagechange", function (event) {
   let passage = getPassages()[event.detail];
   console.log(passage);
-  console.info(tokenizePassage(passage.element.innerText));
+  // console.info(tokenizePassage(passage.element.innerText));
   codeContainer.innerText = passage.element.innerText;
 });
 
@@ -685,7 +686,7 @@ function tokenizePassage(text) {
 
       if (nodeCompleted) continue;
 
-      breadcrumbTrail.push({origin: parseNode.origin, type: parseNode.type, node: node});
+      breadcrumbTrail.push({ origin: parseNode.origin, type: parseNode.type, node: node });
       console.log("entering", breadcrumbTrail);
     } else {
       // Closing
@@ -704,3 +705,24 @@ function tokenizePassage(text) {
 
   return nodes;
 }
+
+/* END SUGARADDICT */
+}
+
+let tries = 0;
+
+let injectionInterval = setTimeout(function() {
+  console.log("Check", window.SugarCube, unsafeWindow.SugarCube);
+  if (window.SugarCube) {
+    init();
+    clearInterval(injectionInterval);
+    return;
+  }
+  
+  tries++;
+  if (tries > 50) {
+    console.error("[SugarAddict] I fold!")
+    clearInterval(injectionInterval);
+    throw Error("No SugarCube :( SugarAddict aborting!");
+  }
+}, 200);
