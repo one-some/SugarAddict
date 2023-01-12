@@ -1,9 +1,8 @@
 # SugarAddict
-Userscript tool for editing the state of SugarCube games.
+Extension for editing the state of SugarCube games.
 
 ### Notes
-- This script has only been tested with Violentmonkey, but other userscript managers will probably work
-- This script runs on every page, as games can be on any domain. The script errors and closes upon not finding SugarCube, but if you don't want it running regardless, you can either edit the `@match` metadata field or disable the script.
+- The extension is Firefox only for now due to me using Firefox. If you want a Chrome version make an issue and it might happen in a few years
 
 ## Features
 - Variable editing (including complicated-ish things like nested objects and arrays and such)

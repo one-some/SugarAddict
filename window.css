@@ -1,0 +1,179 @@
+:root {
+    /* TODO: Make these one format pleeeeeaaaaaaaase */
+    --sa-window: rgb(28, 28, 28);
+    --sa-topbar: rgb(76, 75, 70);
+    --sa-tab: #363634;
+    --sa-tabbar: #181817;
+}
+
+#sa-window-container {
+    position: fixed;
+    width: 600px;
+    top: 0px;
+    left: 0px;
+    display: flex;
+    flex-direction: column;
+    z-index: 999999;
+}
+
+#sa-topbar {
+    width: 100%;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--sa-topbar);
+    cursor: default;
+    font-family: monospace;
+    user-select: none;
+    color: white;
+}
+
+.sa-dragging {
+    cursor: grabbing;
+}
+
+#sa-minimize {
+    float: right;
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+#sa-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+    background-color: var(--sa-window);
+    height: 400px;
+}
+
+#sa-tabbar {
+    background-color: var(--sa-tabbar);
+}
+
+.sa-tab-icon {
+    background-color: var(--sa-tab);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 1px;
+    opacity: 0.4;
+    user-select: none;
+}
+
+.sa-tab-icon.sa-selected {
+    opacity: 1.0;
+}
+
+#sa-tab-content-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 12px;
+}
+
+.sa-tab-content {
+    color: white;
+    font-family: monospace;
+    width: 100%;
+    height: 100%;
+}
+
+.sa-var-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+.sa-contracted {
+    display: none;
+}
+
+.sa-clickable {
+    cursor: pointer;
+}
+
+.sa-note {
+    opacity: 0.4;
+    font-style: italic;
+}
+
+.sa-var-value {
+    max-height: calc(line-height);
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.sa-var-type {
+    font-size: 10px;
+    opacity: 0.4;
+    margin-right: 3px;
+}
+
+.sa-angry {
+    color: red;
+}
+
+.sa-hidden {
+    display: none !important;
+}
+
+.sa-passage {
+    display: flex;
+    justify-content: space-between;
+    background-color: rgb(28, 28, 28);
+}
+
+[tab-id="passages"] {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#sa-passage-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.sa-passage.sa-shiny {
+    background-color: rgb(38, 38, 38);
+}
+
+#sa-nav-container {
+    display: flex;
+    flex-direction: row;
+    column-gap: 10px;
+}
+
+.sa-nav-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+    height: 64px;
+    background-color: #2577ce;
+    cursor: pointer;
+}
+
+.sa-varlog-cont {
+    display: flex;
+    justify-content: space-between;
+}
+
+.sa-tab-content[tab-id="varlog"]>div:nth-child(odd) {
+    background: var(--sa-window);
+    filter: brightness(130%);
+}
+
+.sa-varlog-passage {
+    display: flex;
+    justify-content: center;
+    font-style: italic;
+    opacity: 0.5;
+}
