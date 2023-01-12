@@ -16,7 +16,7 @@ export async function makeWindow(tabs) {
     // Hack
     $e("spacer", topBar);
 
-    const label = $e("span", topBar, { innerText: "SugarAddict" });
+    const titleLabel = $e("span", topBar, { innerText: "SugarAddict" });
     const minimizeButton = $e("span", topBar, { innerText: "-", id: "sa-minimize" });
 
     const main = $e("div", windowContainer, { id: "sa-main" });
@@ -58,6 +58,7 @@ export async function makeWindow(tabs) {
         }
         const coolTab = $el(`.sa-tab-content[tab-id="${tabId}"]`);
         coolTab.classList.remove("sa-hidden");
+        titleLabel.innerText = `${tabs[tabId].title} - SugarAddict`;
     }
 
     for (const [tabId, data] of Object.entries(tabs)) {

@@ -23,11 +23,11 @@ export async function initSugarCube() {
     const { makeWindow } = await import(browser.runtime.getURL("window.js"));
 
     const tabs = await makeWindow({
-        "home": { icon: "🏠" },
-        "vars": { icon: "🔧" },
-        "varlog": { icon: "🔴" },
-        "passages": { icon: "📔" },
-        "decompiler": { icon: "💻" }, // Yes I know this isn't decompiling anything but it sounds cool
+        "home": { title: "Home", icon: "🏠" },
+        "vars": { title: "Variables", icon: "🔧" },
+        "varlog": { title: "State Stream", icon: "🔴" },
+        "passages": { title: "Passages", icon: "📔" },
+        "decompiler": { title: "Decompiler", icon: "💻" }, // Yes I know this isn't decompiling anything but it sounds cool
     });
 
 
