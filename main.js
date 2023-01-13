@@ -17,7 +17,7 @@ async function tryInit() {
     } else if (window.wrappedJSObject.$dataActors) {
         const { initRPGMaker } = await import(browser.runtime.getURL("engines/rpgmaker.js"));
         await initRPGMaker();
+    } else {
+        console.error("Nothing :^(");
     }
-
-    console.error("Nothing :^(");
 }

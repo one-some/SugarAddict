@@ -11,6 +11,13 @@ export async function makeWindow(tabs) {
     });
 
     const windowContainer = $e("div", document.body, { id: "sa-window-container" });
+
+    function dontPropagate(event) { event.stopPropagation(); }
+
+    windowContainer.addEventListener("pointerdown", dontPropagate);
+    windowContainer.addEventListener("mousedown", dontPropagate);
+    windowContainer.addEventListener("click", dontPropagate);
+
     const topBar = $e("div", windowContainer, { id: "sa-topbar" });
 
     // Hack
