@@ -1,6 +1,7 @@
 const $gamePlayer = window.wrappedJSObject.$gamePlayer;
 const $gameParty = window.wrappedJSObject.$gameParty;
 const $dataItems = window.wrappedJSObject.$dataItems;
+const $gameActors = window.wrappedJSObject.$gameActors;
 
 export async function initRPGMaker() {
     console.log("[SA @ RPGMaker] Initializing RPGMaker backend...");
@@ -11,7 +12,7 @@ export async function initRPGMaker() {
     const tabs = await makeWindow({
         // "home": { title: "Home", icon: "🏠" },
         "player": { title: "Player", icon: "👤" },
-        // "stats": { title: "Stats", icon: "📊" },
+        "party": { title: "Party", icon: "👨‍👩‍👦‍👦" },
         "items": { title: "Items", icon: "🏷️" },
         // "vars": { title: "Variables", icon: "🔧" },
     });
@@ -64,6 +65,23 @@ export async function initRPGMaker() {
         event.stopPropagation();
     });
 
+    $e("span", tabs.player.content, { innerText: "Actions", classes: ["sa-header"] });
+    const recoverButton = $e("div", tabs.player.content, { innerText: "Recover", classes: ["sa-nav-button"] });
+    recoverButton.addEventListener("click", function() {
+        // TODO: Probably is a better way to do this
+        const playerActorId = $gameParty._actors[0];
+        $gameActors.actor(playerActorId).recoverAll();
+    });
+
+    /* Party */
+
+    $e("span", tabs.party.content, { innerText: "Actions", classes: ["sa-header"] });
+    const partyRecoverButton = $e("div", tabs.party.content, { innerText: "Recover Party", classes: ["sa-nav-button"] });
+    partyRecoverButton.addEventListener("click", function() {
+        for (const actorId of $gameParty._actors) {
+            $gameActors.actor(actorId).recoverAll();
+        }
+    });
 
     /* Items */
 
