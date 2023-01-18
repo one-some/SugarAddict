@@ -44,30 +44,30 @@ export async function initRPGMaker() {
     })
 
     $e("span", tabs.player.content, { innerText: "Money", classes: ["sa-header"] });
-    const moneyInput = $e("input", tabs.player.content, { value: $gameParty._gold});
+    const moneyInput = $e("input", tabs.player.content, { value: $gameParty._gold });
     let moneyCache = $gameParty._gold;
 
     // Update money
-    setInterval(function() {
+    setInterval(function () {
         if ($gameParty._gold === moneyCache) return;
         moneyCache = $gameParty._gold;
         moneyInput.value = moneyCache;
     }, 200);
 
-    moneyInput.addEventListener("change", function(event) {
+    moneyInput.addEventListener("change", function (event) {
         let cash = parseInt(moneyInput.value);
         if (!cash && cash !== 0) return;
         $gameParty._gold = cash;
     });
 
-    moneyInput.addEventListener("keydown", function(event) {
+    moneyInput.addEventListener("keydown", function (event) {
         if (event.key === "Enter") moneyInput.blur();
         event.stopPropagation();
     });
 
     $e("span", tabs.player.content, { innerText: "Actions", classes: ["sa-header"] });
     const recoverButton = $e("div", tabs.player.content, { innerText: "Recover", classes: ["sa-nav-button"] });
-    recoverButton.addEventListener("click", function() {
+    recoverButton.addEventListener("click", function () {
         // TODO: Probably is a better way to do this
         const playerActorId = $gameParty._actors[0];
         $gameActors.actor(playerActorId).recoverAll();
@@ -77,7 +77,7 @@ export async function initRPGMaker() {
 
     $e("span", tabs.party.content, { innerText: "Actions", classes: ["sa-header"] });
     const partyRecoverButton = $e("div", tabs.party.content, { innerText: "Recover Party", classes: ["sa-nav-button"] });
-    partyRecoverButton.addEventListener("click", function() {
+    partyRecoverButton.addEventListener("click", function () {
         for (const actorId of $gameParty._actors) {
             $gameActors.actor(actorId).recoverAll();
         }
@@ -88,12 +88,21 @@ export async function initRPGMaker() {
     const itemList = $e("div", tabs.items.content, { id: "sa-rpgm-item-list" });
     const itemRightCont = $e("div", tabs.items.content, { id: "sa-rpgm-item-right" });
     const itemDetails = $e("div", itemRightCont, { id: "sa-rpgm-item-details" });
-    const gimmieButton = $e("div", itemRightCont, { innerText: "Give", classes: ["sa-nav-button"], "style.flexGrow": 0 });
+
+    const floor = $e("div", itemRightCont, { id: "sa-rpgm-item-details-floor" });
+    $e("span", floor, { innerText: "Count" });
+    const countInput = $e("input", floor, {
+        type: "number",
+        min: 0,
+        max: 100000,
+        step: 1,
+    });
     let selectedItem = null;
 
-    gimmieButton.addEventListener("click", function (event) {
-        let val = $gameParty._items[selectedItem.id] ?? 0;
-        $gameParty._items[selectedItem.id] = val + 1;
+    countInput.addEventListener("change", function (event) {
+        // let oldVal = $gameParty._items[selectedItem.id] ?? 0;
+        let newVal = parseInt(countInput.value);
+        if (newVal) $gameParty._items[selectedItem.id] = newVal;
     });
 
     function updateSelectedItem(item) {
@@ -102,6 +111,7 @@ export async function initRPGMaker() {
         $e("span", itemDetails, { innerText: item.name, classes: ["sa-header"] });
         if (item.description) $e("div", itemDetails, { innerText: item.description });
         if (item.price) $e("div", itemDetails, { innerText: `Price: ${item.price}` });
+        countInput.value = $gameParty._items[item.id] ?? 0;
     }
 
     function drawItem(item) {
@@ -114,7 +124,6 @@ export async function initRPGMaker() {
 
     for (const item of $dataItems) {
         if (!item) continue;
-        console.log(item)
         drawItem(item);
     }
 }

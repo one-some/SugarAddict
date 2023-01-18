@@ -237,3 +237,12 @@
 #sa-rpgm-item-details {
     flex-grow: 1;
 }
+
+#sa-rpgm-item-details-floor {
+    display: flex;
+    width: 100%;
+}
+
+#sa-rpgm-item-details-floor input {
+    flex-grow: 1;
+}
