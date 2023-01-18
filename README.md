@@ -5,20 +5,39 @@ Extension for editing the state of SugarCube games.
 - The extension is Firefox only for now due to me using Firefox. If you want a Chrome version make an issue and it might happen in a few years
 
 ## Features
+### SugarCube Games
 - Variable editing (including complicated-ish things like nested objects and arrays and such)
 - Passage jump
 - Passage code viewer
+### RPG Maker Games
+- Walkspeed manipulation
+- Forcemove (Walk through walls, during cutscenes, whatever you want)
+- Edit money
+- Recover player/party (all stats to full in battle)
+- Give/remove items
 
 ## Maybe future features (maybe)
-- "Capture variable changes" (think Cheat Engine) -- for now changes are outputted in the console.
+### SugarCube
 - Syntax highlighting in code viewer
 - Passage editing in code viewer
 - Check patching in code viewer
 - Click variable in code viewer to jump to it in variable editor
 - Passage content search
 - Open specific passage in code viewer
-- Resizable window
 - Better support for different versions and configurations, currently game compatibility isn't the best
+### RPG Maker
+- Lock stats (ie dont take damage in battle)
+- Item icon previews
+- Interpeter manipulation (teleport to scene?)
+- Actor/party editor
+- Item stat editor
+### Ren'Py
+- Python interpreter (game state shell)
+- Variable editor
+- Force save/skip
+- Passage decompiler(?)
+### General
+- Resizable window
 
 I'm pretty bored with this so I frankly doubt any of this stuff will be implemented
 
