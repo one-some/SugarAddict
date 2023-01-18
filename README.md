@@ -1,5 +1,5 @@
 # SugarAddict
-Extension for editing the state of SugarCube games.
+Extension for editing the state of story-oriented web games.
 
 ### Notes
 - The extension is Firefox only for now due to me using Firefox. If you want a Chrome version make an issue and it might happen in a few years
