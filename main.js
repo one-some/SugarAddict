@@ -8,6 +8,8 @@ async function tryInit() {
     // Profile current game engine. If no supported game engine is found, go home.
 
     if (injected) return;
+    const oldWindow = document.getElementById("sa-window-container");
+    if (oldWindow) oldWindow.remove();
 
     if (window.wrappedJSObject.SugarCube) {
         injected = true;
@@ -17,6 +19,9 @@ async function tryInit() {
     } else if (window.wrappedJSObject.$dataActors) {
         const { initRPGMaker } = await import(browser.runtime.getURL("engines/rpgmaker.js"));
         await initRPGMaker();
+    } else if (window.wrappedJSObject.Module) {
+        const { initRenPyWeb } = await import(browser.runtime.getURL("engines/renpy.js"));
+        await initRenPyWeb();
     } else {
         console.error("Nothing :^(");
     }
