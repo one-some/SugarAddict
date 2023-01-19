@@ -2,9 +2,10 @@ const Module = window.wrappedJSObject.Module;
 
 // Hijack output function to process data
 let outputListeners = [];
-let oldOutFunc = window.wrappedJSObject.out;
+let oldOutFunc = window.wrappedJSObject.out.bind({});
 
 exportFunction(function(text) {
+    console.log("hehe", text);
     oldOutFunc(text);
     console.log("SAINTERCEPT", text);
     for (const listener of outputListeners) {
