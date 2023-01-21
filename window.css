@@ -246,3 +246,20 @@
 #sa-rpgm-item-details-floor input {
     flex-grow: 1;
 }
+
+/* Ren'PyWeb */
+
+.sa-tab-content[tab-id="console"] {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#sa-rp-console-output {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.sa-log-error {
+    color: red;
+}

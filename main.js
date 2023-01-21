@@ -6,10 +6,7 @@ browser.runtime.onMessage.addListener(function (data) {
 
 async function tryInit() {
     // Profile current game engine. If no supported game engine is found, go home.
-
     if (injected) return;
-    const oldWindow = document.getElementById("sa-window-container");
-    if (oldWindow) oldWindow.remove();
 
     if (window.wrappedJSObject.SugarCube) {
         injected = true;

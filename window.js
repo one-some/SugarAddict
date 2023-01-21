@@ -2,15 +2,23 @@ let isMinimized = false;
 let dragOffset = null;
 let dragEl = null;
 
+const decache = Math.random();
+
 export async function makeWindow(tabs) {
+    // Remove old elements and styles
+    for (const el of document.querySelectorAll(".sa-toplevel")) {
+        el.remove();
+    }
+
     const { $e, $el } = await import(browser.runtime.getURL("util.js"));
 
     const style = $e("link", document.head, {
         rel: "stylesheet",
-        href: browser.runtime.getURL("window.css")
+        href: browser.runtime.getURL("window.css") + `?decache=${decache}`,
+        classes: ["sa-toplevel"]
     });
 
-    const windowContainer = $e("div", document.body, { id: "sa-window-container" });
+    const windowContainer = $e("div", document.body, { id: "sa-window-container", classes: ["sa-toplevel"] });
 
     function dontPropagate(event) { event.stopPropagation(); }
 
