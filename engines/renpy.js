@@ -16,7 +16,7 @@ if (!window.wrappedJSObject.SA_OLDOUT) {
 }
 
 exportFunction(function (text) {
-    window.wrappedJSObject.SA_OLDOUT(text);
+    // window.wrappedJSObject.SA_OLDOUT(text);
     for (const listener of outputListeners) { listener(text); }
 }, window, { defineAs: "out" });
 
