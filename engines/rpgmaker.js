@@ -2,6 +2,7 @@ const $gamePlayer = window.wrappedJSObject.$gamePlayer;
 const $gameParty = window.wrappedJSObject.$gameParty;
 const $dataItems = window.wrappedJSObject.$dataItems;
 const $gameActors = window.wrappedJSObject.$gameActors;
+const $gameTroop = window.wrappedJSObject.$gameTroop;
 
 export async function initRPGMaker() {
     console.log("[SA @ RPGMaker] Initializing RPGMaker backend...");
@@ -80,6 +81,13 @@ export async function initRPGMaker() {
     partyRecoverButton.addEventListener("click", function () {
         for (const actorId of $gameParty._actors) {
             $gameActors.actor(actorId).recoverAll();
+        }
+    });
+
+    const enemyKillButton = $e("div", tabs.party.content, { innerText: "Kill Battle Enemies", classes: ["sa-nav-button"] });
+    enemyKillButton.addEventListener("click", function() {
+        for (const enemy of $gameTroop._enemies) {
+            enemy.die();
         }
     });
 
