@@ -43,12 +43,13 @@ function execPy(code) {
 }
 
 function initPythonVM() {
-//     execRawPy(`
-// import json
-// def SA_PRINT(ret):
-//     print(ret)
-//     print("SA_LOVELY|" + json.dumps(ret))`);
-//     // print("SA_LOVELY|" + json.dumps(eval(code)))`);
+    // Experimental optimizations
+    execRawPy(`import renpy
+renpy.config.gc_thresholds = (10000, 10, 10)
+renpy.config.image_cache_size_mb = 100
+`);
+    // Default is (25000, 10, 10)
+
 }
 
 function string2stack(string) {
@@ -70,9 +71,24 @@ export async function initRenPyWeb() {
 
     const { makeWindow } = await import(browser.runtime.getURL("window.js"));
     const tabs = await makeWindow({
+        "home": { title: "Home", icon: "🏠" },
         "console": { title: "Player", icon: "🤹" },
     });
 
+    /* Home */
+    $e("span", tabs.home.content, { innerText: "Memory Management", classes: ["sa-header"] });
+    const gcButton = $e("div", tabs.home.content, { innerText: "Force GC", classes: ["sa-nav-button"] });
+    gcButton.addEventListener("click", function() {
+        console.info("[SA @ RenPy] Trying GC collect")
+        execPy("\\renpy.memory.gc.collect()")
+    });
+
+    const freeMemButton = $e("div", tabs.home.content, { innerText: "Try free_memory()", classes: ["sa-nav-button"] });
+    freeMemButton.addEventListener("click", function() {
+        execPy("\\renpy.exports.free_memory()")
+    })
+
+    /* Console */
     const consoleOutputEl = $e("div", tabs.console.content, { id: "sa-rp-console-output" });
     function consoleWrite(out, error = false) {
         const line = $e("div", consoleOutputEl, { innerText: out });
