@@ -42,9 +42,25 @@ function execPy(code) {
     execRawPy(code);
 }
 
+function string2stack(string) {
+    // Adapted from reverse engineered function. Puts a string on the stack or something
+    let ret = 0;
+    if (!string) return;
+
+    let size = (string.length << 2) + 1;
+    let pointer = window.wrappedJSObject.stackAlloc(size);
+    window.wrappedJSObject.stringToUTF8(string, pointer, size);
+s
+    return pointer;
+}
+
 function initPythonVM() {
     // Experimental optimizations
+    execRawPy("import json");
     execRawPy("import renpy");
+    execRawPy(`pri_store = renpy.python.store_dicts["store"]`);
+    execRawPy(`def SA_EXPORT(val):
+    print(json.dumps(val, default=lambda x: "<advanced>"))`);
     /*
     execRawPy(`import renpy
 renpy.config.gc_thresholds = (10000, 10, 10)
@@ -55,39 +71,49 @@ renpy.config.image_cache_size_mb = 100
 
 }
 
-function string2stack(string) {
-    // Adapted from reverse engineered function. Puts a string on the stack or something
-    let ret = 0;
-    if (!string) return;
+function execRawExpectOutput(code) {
+    return new Promise(function (resolve, reject) {
+        const listener = function (out) {
+            // Remove self from listeners, we're done
+            outputListeners = outputListeners.filter(function (l) {
+                return l !== listener;
+            });
 
-    let size = (string.length << 2) + 1;
-    let pointer = window.wrappedJSObject.stackAlloc(size);
-    window.wrappedJSObject.stringToUTF8(string, pointer, size);
+            resolve(out);
+        }
 
-    return pointer;
+        outputListeners.push(listener);
+        execRawPy(code);
+    });
+}
+
+async function getRenpyVars() {
+    let out = await execRawExpectOutput(`SA_EXPORT({k: pri_store[k] for k in pri_store.ever_been_changed if k in pri_store})`);
+    return JSON.parse(out);
 }
 
 export async function initRenPyWeb() {
     console.log("[SA @ RenPy] Initializing Ren'PyWeb backend...");
 
-    const { $e, $el } = await import(browser.runtime.getURL("util.js"));
+    const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
 
-    const { makeWindow } = await import(browser.runtime.getURL("window.js"));
+    const { makeWindow } = await import(browser.runtime.getURL("ui/window.js"));
     const tabs = await makeWindow({
         "home": { title: "Home", icon: "🏠" },
+        "vars": { title: "Variables", icon: "🔧" },
         "console": { title: "Player", icon: "🤹" },
     });
 
     /* Home */
     $e("span", tabs.home.content, { innerText: "Memory Management", classes: ["sa-header"] });
     const gcButton = $e("div", tabs.home.content, { innerText: "Force GC", classes: ["sa-nav-button"] });
-    gcButton.addEventListener("click", function() {
+    gcButton.addEventListener("click", function () {
         console.info("[SA @ RenPy] Trying GC collect")
         execPy("\\renpy.memory.gc.collect()")
     });
 
     const freeMemButton = $e("div", tabs.home.content, { innerText: "Try free_memory()", classes: ["sa-nav-button"] });
-    freeMemButton.addEventListener("click", function() {
+    freeMemButton.addEventListener("click", function () {
         execPy("\\renpy.exports.free_memory()")
     })
 
@@ -99,7 +125,7 @@ export async function initRenPyWeb() {
         line.scrollIntoView();
     }
     outputListeners.push((t) => consoleWrite(t));
-    errorListeners.push(function(t) {
+    errorListeners.push(function (t) {
         // SPAMMY!!
         if (t.includes("libpng")) return;
         consoleWrite(t, true);
@@ -149,7 +175,22 @@ export async function initRenPyWeb() {
         // Yeah lets just swallow all events ever because that would be funny
         event.stopPropagation();
     });
+
+    /* Variables */
+    let vars = await getRenpyVars();
+
+    let i = 0;
+    for (const [key, value] of Object.entries(SugarCube.State.active.variables)) {
+        renderVariable(key, value, tabs.vars.content, i);
+        i++;
+    }
 }
+
+
+
+
+
+
 
 /* TODO:
  *         enableSkipping:  function() {

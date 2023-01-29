@@ -16,11 +16,11 @@ export async function initSugarCube() {
     console.info(SugarCube)
 
     // HACK: Global util
-    const util = await import(browser.runtime.getURL("util.js"));
+    const util = await import(browser.runtime.getURL("ui/util.js"));
     $e = util.$e;
     $el = util.$el;
 
-    const { makeWindow } = await import(browser.runtime.getURL("window.js"));
+    const { makeWindow } = await import(browser.runtime.getURL("ui/window.js"));
 
     const tabs = await makeWindow({
         "home": { title: "Home", icon: "🏠" },

@@ -7,9 +7,9 @@ const $gameTroop = window.wrappedJSObject.$gameTroop;
 export async function initRPGMaker() {
     console.log("[SA @ RPGMaker] Initializing RPGMaker backend...");
 
-    const { $e, $el } = await import(browser.runtime.getURL("util.js"));
+    const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
 
-    const { makeWindow } = await import(browser.runtime.getURL("window.js"));
+    const { makeWindow } = await import(browser.runtime.getURL("ui/window.js"));
     const tabs = await makeWindow({
         // "home": { title: "Home", icon: "🏠" },
         "player": { title: "Player", icon: "👤" },

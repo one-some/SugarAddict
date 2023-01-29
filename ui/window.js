@@ -10,11 +10,11 @@ export async function makeWindow(tabs) {
         el.remove();
     }
 
-    const { $e, $el } = await import(browser.runtime.getURL("util.js"));
+    const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
 
     const style = $e("link", document.head, {
         rel: "stylesheet",
-        href: browser.runtime.getURL("window.css") + `?decache=${decache}`,
+        href: browser.runtime.getURL("ui/window.css") + `?decache=${decache}`,
         classes: ["sa-toplevel"]
     });
 
