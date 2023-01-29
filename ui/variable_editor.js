@@ -161,6 +161,7 @@ export function renderVariable(key, value, parent, index, familyTree = null, rec
                 setVariable(familyTree, value);
                 knownWorking = value;
             } catch (err) {
+                console.log(err)
                 valueLabel.innerText = knownWorking;
                 valueLabel.classList.add("sa-angry");
             }

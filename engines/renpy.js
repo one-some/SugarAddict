@@ -206,10 +206,11 @@ export async function initRenPyWeb() {
 
     const { renderVariable, varEditorInit } = await import(browser.runtime.getURL("ui/variable_editor.js"));
 
-    function setVariable(k, v) {
-        console.log(k, v);
+    function setVariable(keyChain, v) {
+        console.log(keyChain, v);
         let enc = JSON.stringify(v);
-        execRawPy(`pri_store["${k}"] = json.loads("${enc}")`);
+        let indexChain = keyChain.map((key) => `["${key}"]`).join();
+        execRawPy(`pri_store${indexChain} = json.loads("${enc}")`);
     }
 
     function logVarChange(k, v) {
