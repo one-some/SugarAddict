@@ -127,7 +127,7 @@ export async function initRenPyWeb() {
     /* Console */
     const consoleOutputEl = $e("div", tabs.console.content, { id: "sa-rp-console-output" });
     function consoleWrite(out, error = false) {
-        const line = $e("div", consoleOutputEl, { innerText: out });
+        const line = $e("div", consoleOutputEl, { innerText: out, classes: ["sa-log-entry"] });
         if (error) line.classList.add("sa-log-error");
         line.scrollIntoView();
     }
@@ -184,10 +184,21 @@ export async function initRenPyWeb() {
     });
 
     /* Variables */
+
+    const { renderVariable, varEditorInit } = await import(browser.runtime.getURL("ui/variable_editor.js"));
+
+    function setVariable(k, v) {
+        console.log(k, v);
+        let enc = JSON.stringify(v);
+        execRawPy(`pri_store["${k}"] = json.loads("${enc}")`);
+    }
+    await varEditorInit(setVariable);
+
+    console.log(renderVariable)
     let vars = await getRenpyVars();
 
     let i = 0;
-    for (const [key, value] of Object.entries(SugarCube.State.active.variables)) {
+    for (const [key, value] of Object.entries(vars)) {
         renderVariable(key, value, tabs.vars.content, i);
         i++;
     }
