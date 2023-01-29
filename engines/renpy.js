@@ -34,6 +34,13 @@ function execRawPy(code) {
 }
 
 function execPy(code) {
+    if (code === "\\clear") {
+        for (const el of document.querySelectorAll(".sa-log-entry")) {
+            el.remove();
+        }
+        return;
+    }
+
     // Lame workaround for non working passthrough stuff. builtins._ isn't set :^(
     if (code[0] === "\\") {
         code = code.slice(1);
