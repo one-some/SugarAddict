@@ -58,6 +58,8 @@ function string2stack(string) {
     let pointer = window.wrappedJSObject.stackAlloc(size);
     window.wrappedJSObject.stringToUTF8(string, pointer, size);
 
+    // TODO: Free memory after allocating? Or is that GCed?
+
     return pointer;
 }
 
@@ -65,9 +67,16 @@ function initPythonVM() {
     // Experimental optimizations
     execRawPy("import json");
     execRawPy("import renpy");
+
     execRawPy(`pri_store = renpy.python.store_dicts["store"]`);
+
     execRawPy(`def SA_EXPORT(val):
-    print(json.dumps(val, default=lambda x: "<advanced>"))`);
+    print("SA_EXP|" + json.dumps(val, default=lambda x: "<advanced>"))`);
+
+    execRawPy(`print("""[SugarAddict] RenPy VM hijack success, have fun!
+[SugarAddict] renpy.python.store_dicts["store"] is bound to pri_store for conveinence. Or... just use the variable editor.
+-----
+""")`);
     /*
     execRawPy(`import renpy
 renpy.config.gc_thresholds = (10000, 10, 10)
@@ -81,6 +90,13 @@ renpy.config.image_cache_size_mb = 100
 function execRawExpectOutput(code) {
     return new Promise(function (resolve, reject) {
         const listener = function (out) {
+            if (!out.startsWith("SA_EXP|")) {
+                console.warn("[SA @ RenPy] [ChannelListener] Recieved unchanneled output '${out}', ignoring.");
+                return;
+            }
+
+            out = out.replace("SA_EXP|", "");
+
             // Remove self from listeners, we're done
             outputListeners = outputListeners.filter(function (l) {
                 return l !== listener;
@@ -108,7 +124,7 @@ export async function initRenPyWeb() {
     const tabs = await makeWindow({
         "home": { title: "Home", icon: "🏠" },
         "vars": { title: "Variables", icon: "🔧" },
-        "console": { title: "Player", icon: "🤹" },
+        "console": { title: "Console", icon: "🤹" },
     });
 
     /* Home */
@@ -116,17 +132,20 @@ export async function initRenPyWeb() {
     const gcButton = $e("div", tabs.home.content, { innerText: "Force GC", classes: ["sa-nav-button"] });
     gcButton.addEventListener("click", function () {
         console.info("[SA @ RenPy] Trying GC collect")
-        execPy("\\renpy.memory.gc.collect()")
+        execPy("renpy.memory.gc.collect()")
     });
 
-    const freeMemButton = $e("div", tabs.home.content, { innerText: "Try free_memory()", classes: ["sa-nav-button"] });
+    const freeMemButton = $e("div", tabs.home.content, { innerText: "Try free_memory (May crash, save first!)", classes: ["sa-nav-button"] });
     freeMemButton.addEventListener("click", function () {
-        execPy("\\renpy.exports.free_memory()")
+        execPy("renpy.exports.free_memory()")
     })
 
     /* Console */
     const consoleOutputEl = $e("div", tabs.console.content, { id: "sa-rp-console-output" });
     function consoleWrite(out, error = false) {
+        // Don't leak channeled data into console
+        if (out.startsWith("SA_EXP|")) return;
+
         const line = $e("div", consoleOutputEl, { innerText: out, classes: ["sa-log-entry"] });
         if (error) line.classList.add("sa-log-error");
         line.scrollIntoView();
@@ -192,9 +211,13 @@ export async function initRenPyWeb() {
         let enc = JSON.stringify(v);
         execRawPy(`pri_store["${k}"] = json.loads("${enc}")`);
     }
-    await varEditorInit(setVariable);
 
-    console.log(renderVariable)
+    function logVarChange(k, v) {
+        console.log("LOGCHNG", k, v)
+    }
+
+    await varEditorInit(setVariable, getRenpyVars, logVarChange);
+
     let vars = await getRenpyVars();
 
     let i = 0;

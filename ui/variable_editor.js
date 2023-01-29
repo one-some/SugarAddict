@@ -3,13 +3,20 @@ let cachedChanges = {};
 function $e() { }
 function $el() { }
 function setVariable() { }
+function getVariables() { }
+function logVariableChange() { }
 
-export async function varEditorInit(setVar) {
-    // passthrough like this is super fucking hacky
+export async function varEditorInit(setVar, getVars, logVarChange) {
+    // kinda yucky
     const v = await import(browser.runtime.getURL("ui/util.js"));
     $e = v.$e;
     $el = v.$el;
+
     setVariable = setVar;
+    getVariables = getVars;
+    logVariableChange = logVarChange;
+
+    let monitoringInterval = setInterval(variableChangeWatchdog, 250);
 }
 
 function findVariableChanges(variables) {
@@ -191,4 +198,20 @@ export function renderVariable(key, value, parent, index, familyTree = null, rec
     }
 
     return container;
+}
+
+
+/* Change Log */
+async function variableChangeWatchdog() {
+    let variables = await getVariables();
+    let changes = findVariableChanges(variables);
+
+    for (const [k, v] of Object.entries(changes)) {
+        // Update existing variale visually
+        let el = $el(`[var-path="${k}"] > .sa-var-value`);
+        if (el) el.innerText = v;
+
+        // Log change
+        logVariableChange(k, v);
+    }
 }
