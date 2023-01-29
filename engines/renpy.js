@@ -57,7 +57,7 @@ function string2stack(string) {
     let size = (string.length << 2) + 1;
     let pointer = window.wrappedJSObject.stackAlloc(size);
     window.wrappedJSObject.stringToUTF8(string, pointer, size);
-s
+
     return pointer;
 }
 
