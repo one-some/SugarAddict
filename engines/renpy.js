@@ -44,10 +44,13 @@ function execPy(code) {
 
 function initPythonVM() {
     // Experimental optimizations
+    execRawPy("import renpy");
+    /*
     execRawPy(`import renpy
 renpy.config.gc_thresholds = (10000, 10, 10)
 renpy.config.image_cache_size_mb = 100
 `);
+*/
     // Default is (25000, 10, 10)
 
 }
