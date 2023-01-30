@@ -73,6 +73,8 @@ function initPythonVM() {
     execRawPy(`def SA_EXPORT(val):
     print("SA_EXP|" + json.dumps(val, default=lambda x: "<advanced>"))`);
 
+    execRawPy(`renpy.exports.notify("SugarAddict Injected :-)")`);
+
     execRawPy(`print("""[SugarAddict] RenPy VM hijack success, have fun!
 [SugarAddict] renpy.python.store_dicts["store"] is bound to pri_store for conveinence. Or... just use the variable editor.
 -----
@@ -115,6 +117,7 @@ async function getRenpyVars() {
     return JSON.parse(out);
 }
 
+
 export async function initRenPyWeb() {
     console.log("[SA @ RenPy] Initializing Ren'PyWeb backend...");
 
@@ -124,6 +127,8 @@ export async function initRenPyWeb() {
     const tabs = await makeWindow({
         "home": { title: "Home", icon: "🏠" },
         "vars": { title: "Variables", icon: "🔧" },
+        "varlog": { title: "State Log", icon: "🔴" },
+        "labels": { title: "Labels", icon: "📔" },
         "console": { title: "Console", icon: "🤹" },
     });
 
@@ -131,13 +136,18 @@ export async function initRenPyWeb() {
     $e("span", tabs.home.content, { innerText: "Memory Management", classes: ["sa-header"] });
     const gcButton = $e("div", tabs.home.content, { innerText: "Force GC", classes: ["sa-nav-button"] });
     gcButton.addEventListener("click", function () {
-        console.info("[SA @ RenPy] Trying GC collect")
-        execPy("renpy.memory.gc.collect()")
+        console.info("[SA @ RenPy] Trying GC collect");
+        execPy("renpy.memory.gc.collect()");
     });
 
     const freeMemButton = $e("div", tabs.home.content, { innerText: "Try free_memory (May crash, save first!)", classes: ["sa-nav-button"] });
     freeMemButton.addEventListener("click", function () {
-        execPy("renpy.exports.free_memory()")
+        execPy("renpy.exports.free_memory()");
+    });
+
+    const enableFastSkipping = $e("div", tabs.home.content, { innerText: "Enable fast skipping (>)", classes: ["sa-nav-button"] });
+    enableFastSkipping.addEventListener("click", function () {
+        execPy("renpy.config.fast_skipping = True");
     })
 
     /* Console */
@@ -209,15 +219,27 @@ export async function initRenPyWeb() {
     function setVariable(keyChain, v) {
         console.log(keyChain, v);
         let enc = JSON.stringify(v);
+
+        // TODO: Support numbered index for list (this casts it to string like a dict)
         let indexChain = keyChain.map((key) => `["${key}"]`).join();
         execRawPy(`pri_store${indexChain} = json.loads("${enc}")`);
     }
 
-    function logVarChange(k, v) {
-        console.log("LOGCHNG", k, v)
+    function logVariableChange(k, v) {
+        while (tabs.varlog.content.children.length >= 30) {
+            tabs.varlog.content.firstChild.remove();
+        }
+        const container = $e(
+            "div",
+            tabs.varlog.content,
+            { classes: ["sa-varlog-cont"] },
+            { before: tabs.varlog.content.firstChild }
+        );
+        const keyEl = $e("div", container, { innerText: k });
+        const valueEl = $e("div", container, { innerText: v });
     }
 
-    await varEditorInit(setVariable, getRenpyVars, logVarChange);
+    await varEditorInit(setVariable, getRenpyVars, logVariableChange);
 
     let vars = await getRenpyVars();
 
@@ -226,6 +248,64 @@ export async function initRenPyWeb() {
         renderVariable(key, value, tabs.vars.content, i);
         i++;
     }
+
+    /* Labels */
+    $e("p", tabs.labels.content, {
+        innerText: "Labels are one way in which Ren'Py handles control flow. They are similar to Twine/SugarCube's passages in a way.\n" +
+            "Warning: Jumping to labels arbitrarily will likely result in errors after the label is finished or maybe even immediately. Be sure to save!"
+    });
+
+    const labelContainer = $e("div", tabs.labels.content, { id: "sa-passage-container" });
+    const labelSearchBar = $e("input", tabs.labels.content);
+
+    const labels = JSON.parse(await execRawExpectOutput("SA_EXPORT(list(renpy.exports.get_all_labels()))"));
+    console.log(labels);
+
+    for (const labelName of labels) {
+        let labelEl = $e("div", labelContainer, { classes: ["sa-passage"] });
+        $e("span", labelEl, { innerText: labelName, classes: ["sa-passage-name"] });
+        let jumpButton = $e("span", labelEl, { innerText: "Jump", classes: ["sa-clickable"] });
+
+        jumpButton.addEventListener("click", function () {
+            //execRawPy(`renpy.exports.call_in_new_context("${labelName}")`)
+            execRawPy(`renpy.exports.jump("${labelName}")`)
+        });
+    }
+
+    function processForSearch(string) {
+        string = string.toLowerCase();
+        string = string.replaceAll(/\s/g, "");
+        return string;
+    }
+
+    // Ren'Py <html> gobbles events!!
+    labelSearchBar.addEventListener("keydown", function (event) { event.stopPropagation(); });
+    labelSearchBar.addEventListener("keypress", function (event) { event.stopPropagation(); });
+
+    labelSearchBar.addEventListener("input", function () {
+        let query = processForSearch(labelSearchBar.value);
+        for (const labelEl of document.getElementsByClassName("sa-passage")) {
+            let name = labelEl.querySelector(".sa-passage-name").innerText;
+            if (!query || processForSearch(name).includes(query)) {
+                labelEl.classList.remove("sa-hidden");
+            } else {
+                labelEl.classList.add("sa-hidden");
+            }
+        }
+        updateLabelVisualPolarity();
+    });
+
+    function updateLabelVisualPolarity() {
+        // This really sucks but there aren't a lot of better solutions. :(
+        for (const [i, passageContainer] of Object.entries(document.querySelectorAll(".sa-passage:not(.sa-hidden)"))) {
+            if (i % 2 === 0) {
+                passageContainer.classList.add("sa-shiny");
+            } else {
+                passageContainer.classList.remove("sa-shiny");
+            }
+        }
+    }
+    updateLabelVisualPolarity();
 }
 
 

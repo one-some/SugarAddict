@@ -147,7 +147,8 @@
     background-color: rgb(28, 28, 28);
 }
 
-[tab-id="passages"] {
+[tab-id="passages"],
+[tab-id="labels"] {
     display: flex;
     flex-direction: column;
     height: 100%;
