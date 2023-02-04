@@ -148,7 +148,21 @@ export async function initRenPyWeb() {
     const enableFastSkipping = $e("div", tabs.home.content, { innerText: "Enable fast skipping (>)", classes: ["sa-nav-button"] });
     enableFastSkipping.addEventListener("click", function () {
         execPy("renpy.config.fast_skipping = True");
-    })
+    });
+
+    const markAllSeen = $e("div", tabs.home.content, { innerText: "Mark all labels visited (Unlocks some path progression checks)", classes: ["sa-nav-button"] });
+    markAllSeen.addEventListener("click", function () {
+        execPy(`
+for label in renpy.exports.get_all_labels():
+    renpy.game.persistent._seen_ever[label] = True
+`);
+
+    });
+
+    const markAllUnseen = $e("div", tabs.home.content, { innerText: "Mark all labels unvisited", classes: ["sa-nav-button"] });
+    markAllUnseen.addEventListener("click", function () {
+        execPy("renpy.game.persistent._seen_ever = {}");
+    });
 
     /* Console */
     const consoleOutputEl = $e("div", tabs.console.content, { id: "sa-rp-console-output" });
