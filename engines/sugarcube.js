@@ -141,16 +141,17 @@ export async function initSugarCube() {
 
     /* Var Log */
 
+    let cachedTitle;
     let monitoringInterval = setInterval(watchForChanges, 250);
     function watchForChanges() {
         // Passage title
         let title = SugarCube.State.active.title;
-        if (title !== cachedChanges.title) {
+        if (title !== cachedTitle) {
             document.dispatchEvent(new CustomEvent(
                 "sc-passagechange",
                 { detail: title }
             ))
-            cachedChanges.title = title;
+            cachedTitle = title;
         }
     }
 
