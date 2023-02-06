@@ -15,6 +15,8 @@ if (!window.wrappedJSObject.SA_OLDOUT) {
     exportFunction(window.wrappedJSObject.err.bind({}), window, { defineAs: "SA_OLDERR" });
 }
 
+function noProp(event) { event.stopPropagation(); }
+
 exportFunction(function (text) {
     // window.wrappedJSObject.SA_OLDOUT(text);
     for (const listener of outputListeners) { listener(text); }
@@ -253,13 +255,19 @@ for label in renpy.exports.get_all_labels():
         const valueEl = $e("div", container, { innerText: v });
     }
 
-    await varEditorInit(setVariable, getRenpyVars, logVariableChange);
+    const varContainer = $e("div", tabs.vars.content, {id: "sa-var-cont"});
+    const varSearchBar = $e("input", tabs.vars.content);
+
+    varSearchBar.addEventListener("keydown", noProp);
+    varSearchBar.addEventListener("keypress", noProp);
+
+    await varEditorInit(setVariable, getRenpyVars, logVariableChange, varSearchBar);
 
     let vars = await getRenpyVars();
 
     let i = 0;
     for (const [key, value] of Object.entries(vars)) {
-        renderVariable(key, value, tabs.vars.content, i);
+        renderVariable(key, value, varContainer, i);
         i++;
     }
 
@@ -293,8 +301,8 @@ for label in renpy.exports.get_all_labels():
     }
 
     // Ren'Py <html> gobbles events!!
-    labelSearchBar.addEventListener("keydown", function (event) { event.stopPropagation(); });
-    labelSearchBar.addEventListener("keypress", function (event) { event.stopPropagation(); });
+    labelSearchBar.addEventListener("keydown", noProp);
+    labelSearchBar.addEventListener("keypress", noProp);
 
     labelSearchBar.addEventListener("input", function () {
         let query = processForSearch(labelSearchBar.value);
