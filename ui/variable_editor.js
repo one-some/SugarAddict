@@ -1,4 +1,5 @@
 let cachedChanges = {};
+let lockedVariables = {};
 
 function $e() { }
 function $el() { }
@@ -52,6 +53,15 @@ function findVariableChanges(variables) {
     }
 
     let after = flattenKV(variables);
+
+    // Keep locked variables in check
+    for (const [varPath, lockValue] of Object.entries(lockedVariables)) {
+        if (after[varPath] === lockValue) continue;
+
+        console.log("LOCKEDUPDATE", varPath, lockValue);
+        setVariable(varPath.split("."), lockValue);
+        after[varPath] = lockValue;
+    }
 
     let changes = {};
     for (const [k, v] of Object.entries(after)) {
@@ -114,10 +124,11 @@ function cast(value, type) {
 
 export function renderVariable(key, value, parent, index, familyTree = null, recursionLevel = 0, dimKey = false) {
     familyTree = [...(familyTree || []), key];
+    let varPath = familyTree.join(".");
 
     let container = $e("div", parent, {
         classes: ["sa-var-container"],
-        "var-path": familyTree.join("."),
+        "var-path": varPath,
     });
 
     if (recursionLevel === 0) container.classList.add("sa-toplevel-var");
@@ -157,7 +168,25 @@ export function renderVariable(key, value, parent, index, familyTree = null, rec
     if (dimKey) keyLabel.style.opacity = "0.4";
 
     let hasChildren = (value !== null && value.constructor.name === "Object") || value instanceof Array;
-    let valueLabel = $e("span", container, { innerText: hasChildren ? ">" : value, classes: ["sa-var-value"] });
+
+    let rightBit = $e("div", container, { classes: ["sa-var-right"] });
+    let valueLabel = $e("span", rightBit, { innerText: hasChildren ? ">" : value, classes: ["sa-var-value"] });
+
+    if (!hasChildren) {
+        let lockButton = $e("span", rightBit, { innerText: " -", classes: ["sa-var-lock"] });
+        lockButton.addEventListener("click", function(event) {
+            event.stopPropagation();
+            lockButton.classList.toggle("sa-locked");
+            let isLocked = lockButton.classList.contains("sa-locked");
+            lockButton.innerText = isLocked ? " X" : " -";
+
+            if (isLocked) {
+                lockedVariables[varPath] = cachedChanges.flatVars[varPath];
+            } else {
+                delete lockedVariables[varPath];
+            }
+        });
+    }
 
     if (!hasChildren && type !== "?") {
         let knownWorking = value;
@@ -236,7 +265,7 @@ async function variableChangeWatchdog() {
     let changes = findVariableChanges(variables);
 
     for (const [k, v] of Object.entries(changes)) {
-        // Update existing variale visually
+        // Update existing variable visually
         let el = $el(`[var-path="${k}"] > .sa-var-value`);
         if (el) el.innerText = v;
 

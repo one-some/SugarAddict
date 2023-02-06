@@ -64,7 +64,7 @@ export async function initSugarCube() {
     }
 
 
-    const varContainer = $e("div", tabs.vars.content, {id: "sa-var-cont"});
+    const varContainer = $e("div", tabs.vars.content, {id: "sa-var-cont", classes: ["sa-scroller"]});
     const varSearchBar = $e("input", tabs.vars.content);
 
     await varEditorInit(setVariable, getVariables, logVariableChange, varSearchBar);
@@ -86,7 +86,7 @@ export async function initSugarCube() {
         SugarCube.Engine.play(currentPassage);
     })
 
-    const passageContainer = $e("div", tabs.passages.content, { id: "sa-passage-container" });
+    const passageContainer = $e("div", tabs.passages.content, { id: "sa-passage-container", classes: ["sa-scroller"] });
     const passageSearchbar = $e("input", tabs.passages.content);
 
     function initPassages() {

@@ -91,7 +91,11 @@
 #sa-tab-content-container {
     flex-grow: 1;
     overflow-y: auto;
-    padding-right: 12px;
+    /* padding-right: 12px; */
+}
+
+.sa-scroller {
+    padding-right: 5px;
 }
 
 .sa-tab-content {
@@ -204,6 +208,17 @@
     /* The joys of having the game's CSS affect our UI */
     text-align: left;
 }
+
+.sa-var-lock {
+    color: gray;
+    cursor: pointer;
+}
+
+.sa-var-lock.sa-locked {
+    color: red;
+}
+
+/* RPG Maker */
 
 .sa-movement-container {
     display: flex;
