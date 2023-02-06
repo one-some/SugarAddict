@@ -148,13 +148,15 @@
 }
 
 [tab-id="passages"],
-[tab-id="labels"] {
+[tab-id="vars"],
+[tab-id="passages"] {
     display: flex;
     flex-direction: column;
     height: 100%;
 }
 
-#sa-passage-container {
+#sa-passage-container,
+#sa-var-cont {
     flex-grow: 1;
     overflow-y: auto;
     scrollbar-width: thin;

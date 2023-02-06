@@ -63,14 +63,17 @@ export async function initSugarCube() {
         return SugarCube.State.active.variables;
     }
 
-    await varEditorInit(setVariable, getVariables, logVariableChange);
+
+    const varContainer = $e("div", tabs.vars.content, {id: "sa-var-cont"});
+    const varSearchBar = $e("input", tabs.vars.content);
+
+    await varEditorInit(setVariable, getVariables, logVariableChange, varSearchBar);
 
     let i = 0;
     for (const [key, value] of Object.entries(SugarCube.State.active.variables)) {
-        renderVariable(key, value, tabs.vars.content, i);
+        renderVariable(key, value, varContainer, i);
         i++;
     }
-
 
     let currentPassage = null;
     const currentPassageLabel = $e("p", tabs.passages.content, { classes: ["sa-clickable"] });

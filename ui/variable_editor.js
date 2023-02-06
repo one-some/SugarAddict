@@ -6,7 +6,7 @@ function setVariable() { }
 function getVariables() { }
 function logVariableChange() { }
 
-export async function varEditorInit(setVar, getVars, logVarChange) {
+export async function varEditorInit(setVar, getVars, logVarChange, searchBar) {
     // kinda yucky
     const v = await import(browser.runtime.getURL("ui/util.js"));
     $e = v.$e;
@@ -17,6 +17,32 @@ export async function varEditorInit(setVar, getVars, logVarChange) {
     logVariableChange = logVarChange;
 
     let monitoringInterval = setInterval(variableChangeWatchdog, 250);
+
+    searchBar.addEventListener("input", function () {
+        let query = processForSearch(searchBar.value);
+
+        for (const varContainer of document.getElementsByClassName("sa-toplevel-var")) {
+            // Show all if no query
+            if (!query) {
+                varContainer.classList.remove("sa-hidden");
+                continue;
+            }
+
+            let name = processForSearch(varContainer.querySelector(".sa-var-name").innerText);
+            let value = processForSearch(varContainer.querySelector(".sa-var-value").innerText);
+
+            // If name or value match, show. Otherwise hide
+            varContainer.classList.toggle("sa-hidden", !(name.includes(query) || value.includes(query)))
+        }
+    });
+}
+
+function processForSearch(string) {
+    string = string.toLowerCase();
+    // string = string.replaceAll(/\s/g, ""); // Slow? :b
+    string = string.replaceAll(" ", "");
+    string = string.replaceAll("\n", "");
+    return string;
 }
 
 function findVariableChanges(variables) {
@@ -94,6 +120,8 @@ export function renderVariable(key, value, parent, index, familyTree = null, rec
         "var-path": familyTree.join("."),
     });
 
+    if (recursionLevel === 0) container.classList.add("sa-toplevel-var");
+
     container.style.backgroundColor = getRecursionCSSColor(recursionLevel, index);
 
 
@@ -125,7 +153,7 @@ export function renderVariable(key, value, parent, index, familyTree = null, rec
 
     let typeLabel = $e("span", leftSide, { innerText: `[${visualType}]`, classes: ["sa-var-type"] });
 
-    let keyLabel = $e("span", leftSide, { innerText: key });
+    let keyLabel = $e("span", leftSide, { innerText: key, classes: ["sa-var-name"] });
     if (dimKey) keyLabel.style.opacity = "0.4";
 
     let hasChildren = (value !== null && value.constructor.name === "Object") || value instanceof Array;
