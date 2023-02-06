@@ -200,6 +200,11 @@
     opacity: 0.5;
 }
 
+[tab-id="decompiler"] {
+    /* The joys of having the game's CSS affect our UI */
+    text-align: left;
+}
+
 .sa-movement-container {
     display: flex;
     flex-direction: column;
