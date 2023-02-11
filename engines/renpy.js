@@ -96,7 +96,7 @@ function string2stack(string) {
 }
 
 function initPythonVM() {
-    if (execMethod === execMethod.RENPY_EXEC) {
+    if (execMethod === execMethods.RENPY_EXEC) {
         let codeQueueInterval = setInterval(processAsyncCodeQueue, 15);
     }
 
