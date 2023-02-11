@@ -153,7 +153,7 @@
 
 [tab-id="passages"],
 [tab-id="vars"],
-[tab-id="passages"] {
+[tab-id="labels"] {
     display: flex;
     flex-direction: column;
     height: 100%;

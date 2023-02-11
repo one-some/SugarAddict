@@ -8,7 +8,7 @@ function setVariable() { }
 function getVariables() { }
 function logVariableChange() { }
 
-export async function varEditorInit(setVar, getVars, logVarChange, searchBar) {
+export async function varEditorInit(setVar, getVars, logVarChange, searchBar, varCheckInterval) {
     // kinda yucky
     const v = await import(browser.runtime.getURL("ui/util.js"));
     $e = v.$e;
@@ -18,7 +18,7 @@ export async function varEditorInit(setVar, getVars, logVarChange, searchBar) {
     getVariables = getVars;
     logVariableChange = logVarChange;
 
-    monitoringInterval = setInterval(variableChangeWatchdog, 250);
+    monitoringInterval = setInterval(variableChangeWatchdog, varCheckInterval);
 
     searchBar.addEventListener("input", function () {
         let query = processForSearch(searchBar.value);
@@ -59,6 +59,7 @@ function findVariableChanges(variables) {
     for (const [varPath, lockValue] of Object.entries(lockedVariables)) {
         if (after[varPath] === lockValue) continue;
 
+        console.log("LUP")
         console.log("LOCKEDUPDATE", varPath, lockValue);
         setVariable(varPath.split("."), lockValue);
         after[varPath] = lockValue;

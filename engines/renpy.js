@@ -3,10 +3,19 @@
 const Module = window.wrappedJSObject.Module;
 const RenpyExec = window.wrappedJSObject.renpy_exec;
 
+const win = document.defaultView;
+
 let history = [];
 let historyPointer = 0;
 
+const execMethods = {
+    RENPY_EXEC: "RENPY_EXEC",
+    PYRUN_SIMPLESTRING: "PYRUN_SIMPLESTRING",
+}
+let execMethod;
+
 function consoleWrite(out) { /* Stub */ }
+function log(...args) { console.log("[SA @ RenPy]", ...args); }
 
 // Hijack output function to process data
 let outputListeners = [];
@@ -30,16 +39,24 @@ exportFunction(function (text) {
 }, window, { defineAs: "err" });
 
 
+
+let rpExecCodeQueue = []
+async function processAsyncCodeQueue() {
+    // Awful hack to make async thing work
+    let code = rpExecCodeQueue.pop();
+    if (!code) return;
+    let r = await RenpyExec(code);
+}
+
 // Run in Python VM
 function execRawPy(code) {
-    if (RenpyExec) {
+    if (execMethod === execMethods.RENPY_EXEC) {
         // newer versions of renpy expose this for FREE!!! (thank you Teyut!!!!)
         // also very new versions(?) don't support pyrunsimplestring directly
-        // TODO: Support the better interface to JS added in 202e
-        RenpyExec(code).then(function(ret) {
-            //console.log("hehe")
-            //console.info("[SA @ renpy_exec]", ret);
-        });
+        // TODO: Support the better interface to JS added in 2020
+        // TODO: Find a better solution around this async hack!!!
+        // (.then() errors with access denied!)
+        rpExecCodeQueue.push(code);
     } else {
         console.info("[SA @ _PyRun_SimpleString]", ret);
         let pointer = string2stack(code);
@@ -79,6 +96,10 @@ function string2stack(string) {
 }
 
 function initPythonVM() {
+    if (execMethod === execMethod.RENPY_EXEC) {
+        let codeQueueInterval = setInterval(processAsyncCodeQueue, 15);
+    }
+
     // Experimental optimizations
     // execRawPy("import json");
     execRawPy("import renpy");
@@ -89,7 +110,7 @@ function initPythonVM() {
 def SA_EXPORT(val):
     import json
     print("SA_EXP|" + json.dumps(val, default=lambda x: "<advanced>"))
-renpy.SA_EXPORT = SA_EXPORT`);
+renpy.exports.SA_EXPORT = SA_EXPORT`);
 
     execRawPy(`renpy.exports.notify("SugarAddict Injected :-)")`);
 
@@ -137,7 +158,9 @@ async function getRenpyVars() {
 
 
 export async function initRenPyWeb() {
-    console.log("[SA @ RenPy] Initializing Ren'PyWeb backend...");
+    log("Initializing Ren'PyWeb backend...");
+    execMethod = Module._PyRun_SimpleString ? execMethods.PYRUN_SIMPLESTRING : execMethods.RENPY_EXEC;
+    log(`Found execmethod ${execMethod}`);
 
     const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
 
@@ -151,6 +174,20 @@ export async function initRenPyWeb() {
     });
 
     /* Home */
+    $e("span", tabs.home.content, { innerText: "Info", classes: ["sa-header"] });
+
+    if (execMethod === execMethods.RENPY_EXEC) {
+        $e("span", tabs.home.content, {
+            innerText: "Exec Method: renpy_exec\nNewer RenPy version; Old (and more reliable) injection method won't work. Expect instability and bugs!",
+            classes: ["sa-header"],
+            "style.color": "crimson"
+        });
+    } else if (execMethod === execMethods.PYRUN_SIMPLESTRING) {
+        $e("span", tabs.home.content, { innerText: "Exec Method: PyRun_SimpleString", classes: ["sa-header"], "style.color": "green" });
+    } else {
+        alert("What");
+    }
+
     $e("span", tabs.home.content, { innerText: "Memory Management", classes: ["sa-header"] });
     const gcButton = $e("div", tabs.home.content, { innerText: "Force GC", classes: ["sa-nav-button"] });
     gcButton.addEventListener("click", function () {
@@ -249,7 +286,7 @@ for label in renpy.exports.get_all_labels():
     const { renderVariable, varEditorInit } = await import(browser.runtime.getURL("ui/variable_editor.js"));
 
     function setVariable(keyChain, v) {
-        console.log(keyChain, v);
+        log("Setting", keyChain, v);
         let enc = JSON.stringify(v);
 
         // TODO: Support numbered index for list (this casts it to string like a dict)
@@ -277,7 +314,7 @@ for label in renpy.exports.get_all_labels():
     varSearchBar.addEventListener("keydown", noProp);
     varSearchBar.addEventListener("keypress", noProp);
 
-    await varEditorInit(setVariable, getRenpyVars, logVariableChange, varSearchBar);
+    await varEditorInit(setVariable, getRenpyVars, logVariableChange, varSearchBar, 500);
 
     let vars = await getRenpyVars();
 
@@ -297,7 +334,7 @@ for label in renpy.exports.get_all_labels():
     const labelSearchBar = $e("input", tabs.labels.content);
 
     const labels = JSON.parse(await execRawExpectOutput("renpy.SA_EXPORT(list(renpy.exports.get_all_labels()))"));
-    console.log(labels);
+    log("Labels:", labels);
 
     for (const labelName of labels) {
         let labelEl = $e("div", labelContainer, { classes: ["sa-passage"] });
@@ -358,11 +395,4 @@ for label in renpy.exports.get_all_labels():
 import renpy.config
 renpy.config.allow_skipping = True`);
             },
-
-            enableDeveloper: function() {
-                LDS.RenPy.runPython(`
-import renpy.config
-renpy.config.developer = True`);
-        }
-        }
 */

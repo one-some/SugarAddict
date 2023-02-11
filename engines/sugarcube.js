@@ -67,7 +67,7 @@ export async function initSugarCube() {
     const varContainer = $e("div", tabs.vars.content, {id: "sa-var-cont", classes: ["sa-scroller"]});
     const varSearchBar = $e("input", tabs.vars.content);
 
-    await varEditorInit(setVariable, getVariables, logVariableChange, varSearchBar);
+    await varEditorInit(setVariable, getVariables, logVariableChange, varSearchBar, 250);
 
     let i = 0;
     for (const [key, value] of Object.entries(SugarCube.State.active.variables)) {
