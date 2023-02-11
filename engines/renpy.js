@@ -1,6 +1,8 @@
 // TODO: sorted( renpy.python.store_dicts["store"].ever_been_changed )
 
 const Module = window.wrappedJSObject.Module;
+const RenpyExec = window.wrappedJSObject.renpy_exec;
+
 let history = [];
 let historyPointer = 0;
 
@@ -30,9 +32,20 @@ exportFunction(function (text) {
 
 // Run in Python VM
 function execRawPy(code) {
-    let pointer = string2stack(code);
-    let ret = Module._PyRun_SimpleString(pointer);
-    // Ret is -1 for error, 0 for success
+    if (RenpyExec) {
+        // newer versions of renpy expose this for FREE!!! (thank you Teyut!!!!)
+        // also very new versions(?) don't support pyrunsimplestring directly
+        // TODO: Support the better interface to JS added in 202e
+        RenpyExec(code).then(function(ret) {
+            //console.log("hehe")
+            //console.info("[SA @ renpy_exec]", ret);
+        });
+    } else {
+        console.info("[SA @ _PyRun_SimpleString]", ret);
+        let pointer = string2stack(code);
+        let ret = Module._PyRun_SimpleString(pointer);
+        // Ret is -1 for error, 0 for success
+    }
 }
 
 function execPy(code) {
@@ -67,18 +80,21 @@ function string2stack(string) {
 
 function initPythonVM() {
     // Experimental optimizations
-    execRawPy("import json");
+    // execRawPy("import json");
     execRawPy("import renpy");
 
-    execRawPy(`pri_store = renpy.python.store_dicts["store"]`);
+    execRawPy(`renpy.pri_store = renpy.python.store_dicts["store"]`);
 
-    execRawPy(`def SA_EXPORT(val):
-    print("SA_EXP|" + json.dumps(val, default=lambda x: "<advanced>"))`);
+    execRawPy(`
+def SA_EXPORT(val):
+    import json
+    print("SA_EXP|" + json.dumps(val, default=lambda x: "<advanced>"))
+renpy.SA_EXPORT = SA_EXPORT`);
 
     execRawPy(`renpy.exports.notify("SugarAddict Injected :-)")`);
 
     execRawPy(`print("""[SugarAddict] RenPy VM hijack success, have fun!
-[SugarAddict] renpy.python.store_dicts["store"] is bound to pri_store for conveinence. Or... just use the variable editor.
+[SugarAddict] renpy.python.store_dicts["store"] is bound to renpy.pri_store for conveinence. Or... just use the variable editor.
 -----
 """)`);
     /*
@@ -95,7 +111,7 @@ function execRawExpectOutput(code) {
     return new Promise(function (resolve, reject) {
         const listener = function (out) {
             if (!out.startsWith("SA_EXP|")) {
-                console.warn("[SA @ RenPy] [ChannelListener] Recieved unchanneled output '${out}', ignoring.");
+                console.warn(`[SA @ RenPy] [ChannelListener] Recieved unchanneled output '${out}', ignoring.`);
                 return;
             }
 
@@ -115,7 +131,7 @@ function execRawExpectOutput(code) {
 }
 
 async function getRenpyVars() {
-    let out = await execRawExpectOutput(`SA_EXPORT({k: pri_store[k] for k in pri_store.ever_been_changed if k in pri_store})`);
+    let out = await execRawExpectOutput(`renpy.SA_EXPORT({k: renpy.pri_store[k] for k in renpy.pri_store.ever_been_changed if k in renpy.pri_store})`);
     return JSON.parse(out);
 }
 
@@ -238,7 +254,7 @@ for label in renpy.exports.get_all_labels():
 
         // TODO: Support numbered index for list (this casts it to string like a dict)
         let indexChain = keyChain.map((key) => `["${key}"]`).join();
-        execRawPy(`pri_store${indexChain} = json.loads("${enc}")`);
+        execRawPy(`renpy.pri_store${indexChain} = json.loads("${enc}")`);
     }
 
     function logVariableChange(k, v) {
@@ -280,7 +296,7 @@ for label in renpy.exports.get_all_labels():
     const labelContainer = $e("div", tabs.labels.content, { id: "sa-passage-container" });
     const labelSearchBar = $e("input", tabs.labels.content);
 
-    const labels = JSON.parse(await execRawExpectOutput("SA_EXPORT(list(renpy.exports.get_all_labels()))"));
+    const labels = JSON.parse(await execRawExpectOutput("renpy.SA_EXPORT(list(renpy.exports.get_all_labels()))"));
     console.log(labels);
 
     for (const labelName of labels) {

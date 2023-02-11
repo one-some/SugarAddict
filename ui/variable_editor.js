@@ -1,5 +1,6 @@
 let cachedChanges = {};
 let lockedVariables = {};
+let monitoringInterval;
 
 function $e() { }
 function $el() { }
@@ -17,7 +18,7 @@ export async function varEditorInit(setVar, getVars, logVarChange, searchBar) {
     getVariables = getVars;
     logVariableChange = logVarChange;
 
-    let monitoringInterval = setInterval(variableChangeWatchdog, 250);
+    monitoringInterval = setInterval(variableChangeWatchdog, 250);
 
     searchBar.addEventListener("input", function () {
         let query = processForSearch(searchBar.value);
