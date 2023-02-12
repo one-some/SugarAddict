@@ -43,7 +43,7 @@ export async function initRPGMaker() {
                 break;
             case "checkbox":
                 input = $e("input", container, { type: "checkbox", value: initValue });
-                input.addEventListener("change", () => changeCallback(input.value));
+                input.addEventListener("change", () => changeCallback(input.checked));
                 break;
             case "floatslider":
                 input = $e("input", container, {
@@ -107,7 +107,7 @@ export async function initRPGMaker() {
         "floatslider",
         tabs.player.content,
         (speed) => $gamePlayer._moveSpeed = speed,
-        { min: 0, max: 10, step: 0.1 }
+        { min: 0, max: 6, step: 0.01 }
     )
 
     // Money
@@ -189,7 +189,6 @@ export async function initRPGMaker() {
                 } else {
                     member.removeImmortal();
                 }
-                log(immortal)
             }
         );
 
