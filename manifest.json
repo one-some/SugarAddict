@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "SugarAddict",
-    "version": "1.1",
+    "version": "0.2",
     "description": "Story game manipulation tool",
 
     "icons": {
