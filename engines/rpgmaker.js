@@ -4,10 +4,73 @@ const $dataItems = window.wrappedJSObject.$dataItems;
 const $gameActors = window.wrappedJSObject.$gameActors;
 const $gameTroop = window.wrappedJSObject.$gameTroop;
 
+function log(...args) { console.log("[SA @ RPGMaker]", ...args); }
+
+function registerIntInput(element, onChange) {
+    element.addEventListener("change", function (event) {
+        let value = parseInt(this.value);
+        if (!value && value !== 0) return;
+        onChange(value);
+    });
+
+    element.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") this.blur();
+        event.stopPropagation();
+    });
+}
+
+
 export async function initRPGMaker() {
-    console.log("[SA @ RPGMaker] Initializing RPGMaker backend...");
+    log("Initializing RPGMaker backend...");
 
     const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
+
+
+    function makeSettingColumn(label, valueGetter, type, parent, changeCallback, extra = null) {
+        if (!["inttext", "checkbox", "floatslider"].includes(type)) throw new Error("WAAAAAAAAH");
+
+        const container = $e("div", parent, { classes: ["sa-setting-column"] });
+
+        $e("div", container, { innerText: label, classes: ["sa-setting-title"] });
+
+        let initValue = valueGetter === null ? null : valueGetter();
+
+        let input;
+        switch (type) {
+            case "inttext":
+                input = $e("input", container, { value: initValue });
+                registerIntInput(input, changeCallback);
+                break;
+            case "checkbox":
+                input = $e("input", container, { type: "checkbox", value: initValue });
+                input.addEventListener("change", () => changeCallback(input.value));
+                break;
+            case "floatslider":
+                input = $e("input", container, {
+                    type: "range",
+                    value: initValue,
+                    min: extra.min,
+                    max: extra.max,
+                    step: extra.step,
+                });
+                input.addEventListener("change", () => changeCallback(parseFloat(input.value)));
+                break;
+        }
+
+        // Update the input periodically to reflect the setting's current value.
+        if (valueGetter !== null) {
+            let cacheValue = initValue;
+            let fetcher = setInterval(function() {
+                let value = valueGetter();
+
+                // Do nothing if nothing has changed
+                if (value === cacheValue) return;
+
+                cacheValue = value;
+                input.value = value;
+            }, 200);
+        }
+    }
 
     const { makeWindow } = await import(browser.runtime.getURL("ui/window.js"));
     const tabs = await makeWindow({
@@ -37,34 +100,24 @@ export async function initRPGMaker() {
     rightButton.addEventListener("click", () => $gamePlayer._x++);
     leftButton.addEventListener("click", () => $gamePlayer._x--);
 
-    $e("span", tabs.player.content, { innerText: "Walkspeed", classes: ["sa-header"] });
-    const speedSlider = $e("input", tabs.player.content, { type: "range", min: 0, max: 10, step: 0.1 });
-    speedSlider.value = $gamePlayer._moveSpeed;
-    speedSlider.addEventListener("input", function (event) {
-        $gamePlayer._moveSpeed = speedSlider.value;
-    })
+    // Walkspeed
+    makeSettingColumn(
+        "Walkspeed",
+        () => $gamePlayer._moveSpeed,
+        "floatslider",
+        tabs.player.content,
+        (speed) => $gamePlayer._moveSpeed = speed,
+        { min: 0, max: 10, step: 0.1 }
+    )
 
-    $e("span", tabs.player.content, { innerText: "Money", classes: ["sa-header"] });
-    const moneyInput = $e("input", tabs.player.content, { value: $gameParty._gold });
-    let moneyCache = $gameParty._gold;
-
-    // Update money
-    setInterval(function () {
-        if ($gameParty._gold === moneyCache) return;
-        moneyCache = $gameParty._gold;
-        moneyInput.value = moneyCache;
-    }, 200);
-
-    moneyInput.addEventListener("change", function (event) {
-        let cash = parseInt(moneyInput.value);
-        if (!cash && cash !== 0) return;
-        $gameParty._gold = cash;
-    });
-
-    moneyInput.addEventListener("keydown", function (event) {
-        if (event.key === "Enter") moneyInput.blur();
-        event.stopPropagation();
-    });
+    // Money
+    makeSettingColumn(
+        "Money",
+        () => $gameParty._gold,
+        "inttext",
+        tabs.player.content,
+        (money) => $gameParty._gold = money,
+    )
 
     $e("span", tabs.player.content, { innerText: "Actions", classes: ["sa-header"] });
     const recoverButton = $e("div", tabs.player.content, { innerText: "Recover", classes: ["sa-nav-button"] });
@@ -75,7 +128,6 @@ export async function initRPGMaker() {
     });
 
     /* Party */
-
     $e("span", tabs.party.content, { innerText: "Actions", classes: ["sa-header"] });
     const partyRecoverButton = $e("div", tabs.party.content, { innerText: "Recover Party", classes: ["sa-nav-button"] });
     partyRecoverButton.addEventListener("click", function () {
@@ -85,11 +137,68 @@ export async function initRPGMaker() {
     });
 
     const enemyKillButton = $e("div", tabs.party.content, { innerText: "Kill Battle Enemies", classes: ["sa-nav-button"] });
-    enemyKillButton.addEventListener("click", function() {
+    enemyKillButton.addEventListener("click", function () {
         for (const enemy of $gameTroop._enemies) {
             enemy.die();
         }
     });
+
+    for (const member of $gameParty.allMembers()) {
+        const outerMemberCont = $e("div", tabs.party.content);
+        // Name
+        $e("div", outerMemberCont, { innerText: member._name, classes: ["sa-rpgm-party-member"] });
+
+        const memberCont = $e("div", outerMemberCont, { "style.marginLeft": "24px" });
+
+        // Level
+        makeSettingColumn(
+            "Level (Sometimes dictates max stats)",
+            () => member._level,
+            "inttext",
+            memberCont,
+            (level) => member._level = level,
+        );
+
+        // HP
+        makeSettingColumn(
+            "HP",
+            () => member._hp,
+            "inttext",
+            memberCont,
+            (hp) => member._hp = hp,
+        );
+
+        // MP
+        makeSettingColumn(
+            "MP",
+            () => member._mp,
+            "inttext",
+            memberCont,
+            (mp) => member._mp = mp,
+        );
+
+        // Immortality Toggle (wish i had this)
+        makeSettingColumn(
+            "Immortal",
+            null,
+            "checkbox",
+            memberCont,
+            function (immortal) {
+                if (immortal) {
+                    member.addImmortal();
+                } else {
+                    member.removeImmortal();
+                }
+                log(immortal)
+            }
+        );
+
+        // Tiny recover
+        const recoverButton = $e("div", tabs.party.content, { innerText: "Recover", classes: ["sa-nav-button"] });
+        recoverButton.addEventListener("click", function () {
+            member.recoverAll();
+        });
+    }
 
     /* Items */
 

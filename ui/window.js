@@ -25,6 +25,7 @@ export async function makeWindow(tabs) {
     windowContainer.addEventListener("pointerdown", dontPropagate);
     windowContainer.addEventListener("mousedown", dontPropagate);
     windowContainer.addEventListener("click", dontPropagate);
+    windowContainer.addEventListener("wheel", dontPropagate);
 
     const topBar = $e("div", windowContainer, { id: "sa-topbar" });
 
