@@ -295,6 +295,16 @@
     font-style: italic;
 }
 
+#sa-rpgm-event-list {
+    overflow-y: auto;
+    height: 100%;
+}
+
+.sa-spread {
+    display: flex;
+    justify-content: space-between;
+}
+
 /* Ren'PyWeb */
 
 .sa-tab-content[tab-id="console"] {
@@ -310,4 +320,9 @@
 
 .sa-log-error {
     color: red;
+}
+
+.sa-link {
+    cursor: pointer;
+    text-decoration: underline;
 }

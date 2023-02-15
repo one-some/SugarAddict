@@ -1,8 +1,12 @@
 const $gamePlayer = window.wrappedJSObject.$gamePlayer;
 const $gameParty = window.wrappedJSObject.$gameParty;
-const $dataItems = window.wrappedJSObject.$dataItems;
 const $gameActors = window.wrappedJSObject.$gameActors;
 const $gameTroop = window.wrappedJSObject.$gameTroop;
+const $gameTemp = window.wrappedJSObject.$gameTemp;
+const $gameMap = window.wrappedJSObject.$gameMap;
+
+const $dataItems = window.wrappedJSObject.$dataItems;
+const $dataCommonEvents = window.wrappedJSObject.$dataCommonEvents;
 
 function log(...args) { console.log("[SA @ RPGMaker]", ...args); }
 
@@ -78,6 +82,7 @@ export async function initRPGMaker() {
         "player": { title: "Player", icon: "👤" },
         "party": { title: "Party", icon: "👨‍👩‍👦‍👦" },
         "items": { title: "Items", icon: "🏷️" },
+        "events": { title: "Events (UNSTABLE)", icon: "📔" },
         // "vars": { title: "Variables", icon: "🔧" },
     });
 
@@ -242,4 +247,23 @@ export async function initRPGMaker() {
         if (!item) continue;
         drawItem(item);
     }
+
+    // Events
+    const eventList = $e("div", tabs.events.content, { classes: ["sa-rpgm-event-list"] });
+
+    for (const event of $dataCommonEvents) {
+        if (!event) continue;
+
+        const row = $e("div", eventList, { classes: ["sa-spread"] });
+        $e("span", row, { innerText: event.name });
+
+        const startButton = $e("span", row, { innerText: "[Jump]", classes: ["sa-link"] });
+        startButton.addEventListener("click", function() {
+            console.log(event)
+            $gameTemp._commonEventId = event.id;
+            $gameMap._interpreter.setupReservedCommonEvent()
+        });
+    }
+
+
 }
