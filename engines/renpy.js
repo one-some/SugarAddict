@@ -58,7 +58,7 @@ function execRawPy(code) {
         // (.then() errors with access denied!)
         rpExecCodeQueue.push(code);
     } else {
-        console.info("[SA @ _PyRun_SimpleString]", ret);
+        // console.info("[SA @ _PyRun_SimpleString]", ret);
         let pointer = string2stack(code);
         let ret = Module._PyRun_SimpleString(pointer);
         // Ret is -1 for error, 0 for success
@@ -152,7 +152,7 @@ function execRawExpectOutput(code) {
 }
 
 async function getRenpyVars() {
-    let out = await execRawExpectOutput(`renpy.SA_EXPORT({k: renpy.pri_store[k] for k in renpy.pri_store.ever_been_changed if k in renpy.pri_store})`);
+    let out = await execRawExpectOutput(`renpy.exports.SA_EXPORT({k: renpy.pri_store[k] for k in renpy.pri_store.ever_been_changed if k in renpy.pri_store})`);
     return JSON.parse(out);
 }
 
@@ -333,7 +333,7 @@ for label in renpy.exports.get_all_labels():
     const labelContainer = $e("div", tabs.labels.content, { id: "sa-passage-container" });
     const labelSearchBar = $e("input", tabs.labels.content);
 
-    const labels = JSON.parse(await execRawExpectOutput("renpy.SA_EXPORT(list(renpy.exports.get_all_labels()))"));
+    const labels = JSON.parse(await execRawExpectOutput("renpy.exports.SA_EXPORT(list(renpy.exports.get_all_labels()))"));
     log("Labels:", labels);
 
     for (const labelName of labels) {
