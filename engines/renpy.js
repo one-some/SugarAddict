@@ -314,7 +314,13 @@ for label in renpy.exports.get_all_labels():
     varSearchBar.addEventListener("keydown", noProp);
     varSearchBar.addEventListener("keypress", noProp);
 
-    await varEditorInit(setVariable, getRenpyVars, logVariableChange, varSearchBar, 500);
+    await varEditorInit(
+        setVariable,
+        getRenpyVars,
+        logVariableChange,
+        { bar: varSearchBar, container: varContainer },
+        500
+    );
 
     let vars = await getRenpyVars();
 

@@ -8,7 +8,7 @@ function setVariable() { }
 function getVariables() { }
 function logVariableChange() { }
 
-export async function varEditorInit(setVar, getVars, logVarChange, searchBar, varCheckInterval) {
+export async function varEditorInit(setVar, getVars, logVarChange, searchElements, varCheckInterval) {
     // kinda yucky
     const v = await import(browser.runtime.getURL("ui/util.js"));
     $e = v.$e;
@@ -20,8 +20,8 @@ export async function varEditorInit(setVar, getVars, logVarChange, searchBar, va
 
     monitoringInterval = setInterval(variableChangeWatchdog, varCheckInterval);
 
-    searchBar.addEventListener("input", function () {
-        let query = processForSearch(searchBar.value);
+    searchElements.bar.addEventListener("input", function () {
+        let query = processForSearch(searchElements.bar.value);
 
         for (const varContainer of document.getElementsByClassName("sa-toplevel-var")) {
             // Show all if no query
@@ -37,6 +37,12 @@ export async function varEditorInit(setVar, getVars, logVarChange, searchBar, va
             varContainer.classList.toggle("sa-hidden", !(name.includes(query) || value.includes(query)))
         }
     });
+
+    let i = 0;
+    for (const [key, value] of Object.entries(getVariables())) {
+        renderVariable(key, value, searchElements.container, i);
+        i++;
+    }
 }
 
 function processForSearch(string) {
@@ -176,7 +182,7 @@ export function renderVariable(key, value, parent, index, familyTree = null, rec
 
     if (!hasChildren) {
         let lockButton = $e("span", rightBit, { innerText: " -", classes: ["sa-var-lock"] });
-        lockButton.addEventListener("click", function(event) {
+        lockButton.addEventListener("click", function (event) {
             event.stopPropagation();
             lockButton.classList.toggle("sa-locked");
             let isLocked = lockButton.classList.contains("sa-locked");

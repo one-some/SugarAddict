@@ -4,6 +4,7 @@ const $gameActors = window.wrappedJSObject.$gameActors;
 const $gameTroop = window.wrappedJSObject.$gameTroop;
 const $gameTemp = window.wrappedJSObject.$gameTemp;
 const $gameMap = window.wrappedJSObject.$gameMap;
+const $gameVariables = window.wrappedJSObject.$gameVariables;
 
 const $dataItems = window.wrappedJSObject.$dataItems;
 const $dataCommonEvents = window.wrappedJSObject.$dataCommonEvents;
@@ -64,7 +65,7 @@ export async function initRPGMaker() {
         // Update the input periodically to reflect the setting's current value.
         if (valueGetter !== null) {
             let cacheValue = initValue;
-            let fetcher = setInterval(function() {
+            let fetcher = setInterval(function () {
                 let value = valueGetter();
 
                 // Do nothing if nothing has changed
@@ -83,6 +84,8 @@ export async function initRPGMaker() {
         "party": { title: "Party", icon: "👨‍👩‍👦‍👦" },
         "items": { title: "Items", icon: "🏷️" },
         "events": { title: "Events (UNSTABLE)", icon: "📔" },
+        "vars": { title: "Variables", icon: "🔧" },
+        "varlog": { title: "State Log", icon: "🔴" },
         // "vars": { title: "Variables", icon: "🔧" },
     });
 
@@ -258,12 +261,47 @@ export async function initRPGMaker() {
         $e("span", row, { innerText: event.name });
 
         const startButton = $e("span", row, { innerText: "[Jump]", classes: ["sa-link"] });
-        startButton.addEventListener("click", function() {
+        startButton.addEventListener("click", function () {
             console.log(event)
             $gameTemp._commonEventId = event.id;
             $gameMap._interpreter.setupReservedCommonEvent()
         });
     }
 
+    // Variables
 
+    const { renderVariable, varEditorInit } = await import(browser.runtime.getURL("ui/variable_editor.js"));
+
+    function setVariable(varID, value) {
+        varID = parseInt(varID);
+        console.log(varID, value);
+        $gameVariables.setValue(varID, value)
+    }
+
+    function logVariableChange(k, v) {
+        while (tabs.varlog.content.children.length >= 30) {
+            tabs.varlog.content.firstChild.remove();
+        }
+        const container = $e(
+            "div",
+            tabs.varlog.content,
+            { classes: ["sa-varlog-cont"] },
+            { before: tabs.varlog.content.firstChild }
+        );
+        const keyEl = $e("div", container, { innerText: k });
+        const valueEl = $e("div", container, { innerText: v });
+    }
+
+    const varContainer = $e("div", tabs.vars.content, { id: "sa-var-cont", classes: ["sa-scroller"] });
+    const varSearchBar = $e("input", tabs.vars.content);
+
+    function getVariables() { return $gameVariables._data; }
+    console.log(getVariables());
+    await varEditorInit(
+        setVariable,
+        getVariables,
+        logVariableChange,
+        { bar: varSearchBar, container: varContainer },
+        250,
+    );
 }
