@@ -1,5 +1,3 @@
-// TODO: sorted( renpy.python.store_dicts["store"].ever_been_changed )
-
 const Module = window.wrappedJSObject.Module;
 const RenpyExec = window.wrappedJSObject.renpy_exec;
 
@@ -308,7 +306,7 @@ for label in renpy.exports.get_all_labels():
         const valueEl = $e("div", container, { innerText: v });
     }
 
-    const varContainer = $e("div", tabs.vars.content, {id: "sa-var-cont"});
+    const varContainer = $e("div", tabs.vars.content, { id: "sa-var-cont" });
     const varSearchBar = $e("input", tabs.vars.content);
 
     varSearchBar.addEventListener("keydown", noProp);
