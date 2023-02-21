@@ -99,7 +99,7 @@ function initPythonVM() {
     }
 
     // Experimental optimizations
-    // execRawPy("import json");
+    execRawPy("import json");
     execRawPy("import renpy");
 
     execRawPy(`renpy.pri_store = renpy.python.store_dicts["store"]`);
