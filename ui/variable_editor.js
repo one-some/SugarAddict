@@ -1,14 +1,17 @@
 let cachedChanges = {};
 let lockedVariables = {};
 let monitoringInterval;
+let renderedVariables = [];
+let searchElements = {};
 
 function $e() { }
 function $el() { }
 function setVariable() { }
 function getVariables() { }
 function logVariableChange() { }
+function log(...args) { console.log("[SA @ VariableEditor]", ...args); }
 
-export async function varEditorInit(setVar, getVars, logVarChange, searchElements, varCheckInterval) {
+export async function varEditorInit(setVar, getVars, logVarChange, _searchElements, varCheckInterval) {
     // kinda yucky
     const v = await import(browser.runtime.getURL("ui/util.js"));
     $e = v.$e;
@@ -17,8 +20,7 @@ export async function varEditorInit(setVar, getVars, logVarChange, searchElement
     setVariable = setVar;
     getVariables = getVars;
     logVariableChange = logVarChange;
-
-    monitoringInterval = setInterval(variableChangeWatchdog, varCheckInterval);
+    searchElements = _searchElements;
 
     searchElements.bar.addEventListener("input", function () {
         let query = processForSearch(searchElements.bar.value);
@@ -41,8 +43,11 @@ export async function varEditorInit(setVar, getVars, logVarChange, searchElement
     let i = 0;
     for (const [key, value] of Object.entries(getVariables())) {
         renderVariable(key, value, searchElements.container, i);
+        renderedVariables.push(key);
         i++;
     }
+
+    monitoringInterval = setInterval(variableChangeWatchdog, varCheckInterval);
 }
 
 function processForSearch(string) {
@@ -270,8 +275,19 @@ export function renderVariable(key, value, parent, index, familyTree = null, rec
 /* Change Log */
 async function variableChangeWatchdog() {
     let variables = await getVariables();
-    let changes = findVariableChanges(variables);
 
+    // Render new variables
+    let i = renderedVariables.length - 1;
+    for (const [key, value] of Object.entries(variables)) {
+        if (renderedVariables.includes(key)) continue;
+
+        log(`Found new variable '${key}'`);
+        renderVariable(key, value, searchElements.container, i);
+        renderedVariables.push(key);
+        i++;
+    }
+
+    let changes = findVariableChanges(variables);
     for (const [k, v] of Object.entries(changes)) {
         // Update existing variable visually
         let el = $el(`[var-path="${k}"] > .sa-var-value`);

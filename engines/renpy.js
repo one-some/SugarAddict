@@ -281,7 +281,7 @@ for label in renpy.exports.get_all_labels():
 
     /* Variables */
 
-    const { renderVariable, varEditorInit } = await import(browser.runtime.getURL("ui/variable_editor.js"));
+    const { varEditorInit } = await import(browser.runtime.getURL("ui/variable_editor.js"));
 
     function setVariable(keyChain, v) {
         log("Setting", keyChain, v);
@@ -321,12 +321,6 @@ for label in renpy.exports.get_all_labels():
     );
 
     let vars = await getRenpyVars();
-
-    let i = 0;
-    for (const [key, value] of Object.entries(vars)) {
-        renderVariable(key, value, varContainer, i);
-        i++;
-    }
 
     /* Labels */
     $e("p", tabs.labels.content, {
