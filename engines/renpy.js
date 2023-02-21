@@ -114,6 +114,7 @@ renpy.exports.SA_EXPORT = SA_EXPORT`);
 
     execRawPy(`print("""[SugarAddict] RenPy VM hijack success, have fun!
 [SugarAddict] renpy.python.store_dicts["store"] is bound to renpy.pri_store for conveinence. Or... just use the variable editor.
+[SugarAddict] Some renpy methods and variables you may be familiar with might be located in 'renpy.exports' instead of 'renpy'.
 -----
 """)`);
     /*
