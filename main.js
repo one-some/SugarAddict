@@ -30,6 +30,9 @@ async function tryInit() {
     // Profile current game engine. If no supported game engine is found, go home.
     if (injected) return;
 
+    let vars = getWindowVariables();
+    console.log(vars);
+
     if (window.wrappedJSObject.SugarCube) {
         injected = true;
         const { initSugarCube } = await import(browser.runtime.getURL("engines/sugarcube.js"));
@@ -42,8 +45,6 @@ async function tryInit() {
         const { initRenPyWeb } = await import(browser.runtime.getURL("engines/renpy.js"));
         await initRenPyWeb();
     } else {
-        console.error("Nothing :^( Dumping window variables...");
-        let vars = getWindowVariables();
-        console.log(vars);
+        console.error("Nothing :^(");
     }
 }
