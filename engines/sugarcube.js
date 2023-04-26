@@ -28,6 +28,7 @@ export async function initSugarCube() {
         "varlog": { title: "State Log", icon: "🔴" },
         "passages": { title: "Passages", icon: "📔" },
         "decompiler": { title: "Decompiler", icon: "💻" }, // Yes I know this isn't decompiling anything but it sounds cool
+        "patches": { title: "Patches", icon: "🩹" },
     });
 
 
@@ -177,6 +178,23 @@ export async function initSugarCube() {
         codeContainer.innerText = passage.element.innerText;
     });
 
+    await initPatches(tabs);
+}
+
+async function initPatches(tabs) {
+    let ifId = SugarCube.Story.ifId;
+    console.log("Finding patches for", ifId);
+
+    try {
+        const patchMod = await import(browser.runtime.getURL(`patches/sugarcube/${ifId}.js`));
+        for (const patch of patchMod.PATCHDATA.patches) {
+            console.log("Loaded", patch.label)
+            const button = $e("div", tabs.patches.content, { innerText: patch.label, classes: ["sa-nav-button"] });
+            button.addEventListener("click", patch.func)
+        }
+    } catch (error) {
+        console.log("No patches for current story! :^(", error);
+    }
 }
 
 /* - Passage Data - */

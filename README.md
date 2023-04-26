@@ -15,6 +15,11 @@ Extension for editing the state of story-oriented web games.
 - Edit money
 - Recover player/party (all stats to full in battle)
 - Give/remove items
+### Ren'PyWeb Games
+- Variable editor
+- Python interpreter (game state shell)
+- Enable things like superskip
+- Manually manage memory (6 GB of ram is a little excessive for a visual novel)
 
 ## Maybe future features (maybe)
 ### SugarCube
@@ -32,8 +37,6 @@ Extension for editing the state of story-oriented web games.
 - Actor/party editor
 - Item stat editor
 ### Ren'Py
-- Python interpreter (game state shell)
-- Variable editor
 - Force save/skip
 - Passage decompiler(?)
 ### General
