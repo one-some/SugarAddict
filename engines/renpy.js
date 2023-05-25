@@ -26,14 +26,30 @@ if (!window.wrappedJSObject.SA_OLDOUT) {
 
 function noProp(event) { event.stopPropagation(); }
 
+function isEngineOutputAnnoying(text) {
+    let t = text.toLowerCase();
+
+    for (const annoying in [
+        "syncfs operations in flight at once",
+
+        // Ignore exceptions from unwritable DBs due to what I assume is private mode
+        "a mutation operation was attempted on",
+    ]) {
+        if (t.includes(text.toLowerCase())) return true;
+    }
+
+    return false;
+}
+
 exportFunction(function (text) {
+    if (isEngineOutputAnnoying(text)) return;
+
     // window.wrappedJSObject.SA_OLDOUT(text);
     for (const listener of outputListeners) { listener(text); }
 }, window, { defineAs: "out" });
 
 exportFunction(function (text) {
-    // Ignore exceptions from unwritable DBs due to what I assume is private mode
-    if (text.toLowerCase().includes("a mutation operation was attempted on")) return;
+    if (isEngineOutputAnnoying(text)) return;
 
     window.wrappedJSObject.SA_OLDERR(text);
     for (const listener of errorListeners) { listener(text); }
