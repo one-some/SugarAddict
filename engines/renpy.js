@@ -32,6 +32,9 @@ exportFunction(function (text) {
 }, window, { defineAs: "out" });
 
 exportFunction(function (text) {
+    // Ignore exceptions from unwritable DBs due to what I assume is private mode
+    if (text.toLowerCase().includes("a mutation operation was attempted on")) return;
+
     window.wrappedJSObject.SA_OLDERR(text);
     for (const listener of errorListeners) { listener(text); }
 }, window, { defineAs: "err" });
