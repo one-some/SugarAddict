@@ -1,6 +1,7 @@
 let injected = false;
 
-patchCleverTricks();
+// Causes some errors sometimes
+// patchCleverTricks();
 
 browser.runtime.onMessage.addListener(function (data) {
     if (data === "init") tryInit();

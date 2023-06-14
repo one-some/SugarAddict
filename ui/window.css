@@ -234,6 +234,78 @@
     color: red;
 }
 
+/* The animation code */
+@keyframes sa-highlight {
+    from {
+        background-color: rgba(255, 238, 0, 0.2);
+    }
+
+    to {
+        background-color: unset;
+    }
+}
+
+
+.sa-highlight-var {
+    animation-name: sa-highlight;
+    animation-duration: 0.5s;
+}
+
+/* Type colors */
+.sa-type-null {
+    color: rgb(194, 68, 194);
+}
+
+.sa-type-boolean {
+    color: rgb(211, 67, 91);
+}
+
+.sa-type-number {
+    color: lightgreen;
+}
+
+.sa-type-string {
+    color: salmon;
+}
+
+.sa-type-array {
+    color: yellow;
+}
+
+.sa-type-object {
+    color: orange;
+}
+
+/* Decompiler */
+
+sat-link,
+sat-include-passage {
+    color: lightblue;
+    cursor: pointer;
+}
+
+
+sat-set-name {
+    color: coral;
+}
+
+sat-set-value {
+    color: lightgreen;
+}
+
+sat-if-cond {
+    color: #f2f25c;
+}
+
+sat-if-var {
+    color: coral;
+}
+
+sat-endif,
+sat-else {
+    color: #e67de6;
+}
+
 /* RPG Maker */
 
 .sa-movement-container {

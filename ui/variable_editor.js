@@ -176,8 +176,12 @@ export function renderVariable(key, value, parent, index, familyTree = null, rec
     }[type] || "?";
 
     let leftSide = $e("div", container);
+    let typeClass = `sa-type-${type}`;
 
-    let typeLabel = $e("span", leftSide, { innerText: `[${visualType}]`, classes: ["sa-var-type"] });
+    let typeLabel = $e("span", leftSide, {
+        innerText: `[${visualType}]`,
+        classes: ["sa-var-type", typeClass]
+    });
 
     let keyLabel = $e("span", leftSide, { innerText: key, classes: ["sa-var-name"] });
     if (dimKey) keyLabel.style.opacity = "0.4";
@@ -185,7 +189,10 @@ export function renderVariable(key, value, parent, index, familyTree = null, rec
     let hasChildren = (value !== null && value.constructor.name === "Object") || value instanceof Array;
 
     let rightBit = $e("div", container, { classes: ["sa-var-right"] });
-    let valueLabel = $e("span", rightBit, { innerText: hasChildren ? ">" : value, classes: ["sa-var-value"] });
+    let valueLabel = $e("span", rightBit, {
+        innerText: hasChildren ? ">" : value,
+        classes: ["sa-var-value", typeClass]
+    });
 
     if (!hasChildren) {
         let lockButton = $e("span", rightBit, { innerText: " -", classes: ["sa-var-lock"] });
@@ -292,10 +299,20 @@ async function variableChangeWatchdog() {
     let changes = findVariableChanges(variables);
     for (const [k, v] of Object.entries(changes)) {
         // Update existing variable visually
-        let el = $el(`[var-path="${k}"] > .sa-var-value`);
+        let rowEl = $el(`[var-path="${k}"]`);
+        let el = rowEl.querySelector(".sa-var-value");
         if (el) el.innerText = v;
+        if (rowEl) {
+            rowEl.classList.remove("sa-highlight-var");
+            rowEl.classList.add("sa-highlight-var");
+
+            setTimeout(function () {
+                rowEl.classList.remove("sa-highlight-var");
+            }, 500);
+        }
 
         // Log change
+        // console.log(k, " => ", v)
         logVariableChange(k, v);
     }
 }

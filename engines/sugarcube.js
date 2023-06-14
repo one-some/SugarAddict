@@ -5,6 +5,21 @@
 */
 
 const SugarCube = window.wrappedJSObject.SugarCube;
+let SCInfo = {};
+
+if (SugarCube.version.major === 1) {
+    // Weak compatibility with old SC
+    SugarCube.State = SugarCube.state;
+    const SCInfo = {
+        title: SugarCube.tale._title,
+        ifId: document.querySelector("tw-storydata").getAttribute("ifid"),
+    }
+} else {
+    const SCInfo = {
+        title: SugarCube.Story.title,
+        ifId: SugarCube.Story.ifId,
+    }
+}
 
 // HACK: Global util
 let $e = () => null;
@@ -20,6 +35,8 @@ export async function initSugarCube() {
     $e = util.$e;
     $el = util.$el;
 
+    const TwineParser = await import(browser.runtime.getURL("twine_parser.js"));
+
     const { makeWindow } = await import(browser.runtime.getURL("ui/window.js"));
 
     const tabs = await makeWindow({
@@ -33,6 +50,18 @@ export async function initSugarCube() {
 
 
     /* Twine Variables */
+
+    if (SugarCube.version.major === 1) {
+        SCInfo = {
+            title: SugarCube.tale._title,
+            ifId: $el("tw-storydata").getAttribute("ifid"),
+        }
+    } else {
+        SCInfo = {
+            title: SugarCube.Story.title,
+            ifId: SugarCube.Story.ifId,
+        }
+    }
 
     const { renderVariable, varEditorInit } = await import(browser.runtime.getURL("ui/variable_editor.js"));
 
@@ -132,7 +161,7 @@ export async function initSugarCube() {
 
     const homeTitle = $e("p", tabs.home.content, {
         id: "sa-home-title",
-        innerText: SugarCube.Story.title,
+        innerText: SCInfo.title,
     });
 
     const navContainer = $e("div", tabs.home.content, { id: "sa-nav-container" });
@@ -141,6 +170,22 @@ export async function initSugarCube() {
 
     navBack.addEventListener("click", function () { SugarCube.State.backward(); });
     navForward.addEventListener("click", function () { SugarCube.State.forward(); });
+
+    let compatColor = "gold";
+    let compatInfo = "Support is unknown for this version of SugarCube";
+    if (SugarCube.version.major === 2) {
+        compatColor = "green";
+        compatInfo = "SugarCube v2.0 is usually supported";
+    } else if (SugarCube.version.major == 1) {
+        compatColor = "red";
+        compatInfo = "SugarCube v1.0 has some compatibility, but is usually unsupported. Expect nothing to work";
+    }
+
+    const versionInfo = $e("p", tabs.home.content, {
+        "style.color": compatColor,
+        title: compatInfo,
+        innerText: SugarCube.version.long(),
+    })
 
 
     /* Var Log */
@@ -174,19 +219,21 @@ export async function initSugarCube() {
 
     document.addEventListener("sc-passagechange", function (event) {
         let passage = getPassages()[event.detail];
-        // console.info(tokenizePassage(passage.element.innerText));
-        codeContainer.innerText = passage.element.innerText;
+        let tokens = TwineParser.parse(passage.element.innerText);
+        console.info(tokens)
+        codeContainer.innerText = "";
+        // codeContainer.innerText = passage.element.innerText;
+        reconstructPassage(tokens, codeContainer);
     });
 
     await initPatches(tabs);
 }
 
 async function initPatches(tabs) {
-    let ifId = SugarCube.Story.ifId;
-    console.log("Finding patches for", ifId);
+    console.log("Finding patches for", SCInfo.ifId);
 
     try {
-        const patchMod = await import(browser.runtime.getURL(`patches/sugarcube/${ifId}.js`));
+        const patchMod = await import(browser.runtime.getURL(`patches/sugarcube/${SCInfo.ifId}.js`));
         for (const patch of patchMod.PATCHDATA.patches) {
             console.log("Loaded", patch.label)
             const button = $e("div", tabs.patches.content, { innerText: patch.label, classes: ["sa-nav-button"] });
@@ -206,6 +253,8 @@ function PATCH_TRUE() { return true; }
 exportFunction(PATCH_TRUE, window, { defineAs: "SA_PATCH_TRUE" });
 
 function getPassages() {
+    if (SugarCube.version.major === 1) return SugarCube.tale.passages;
+
     let ret = {};
     for (const dat of SugarCube.Story.lookupWith(window.wrappedJSObject.SA_PATCH_TRUE)) {
         ret[dat.title] = dat;
@@ -221,89 +270,67 @@ function processForSearch(string) {
 
 /* Decompiler */
 
-function tokenizePassage(text) {
-    // work SMART not WELL (Read: this is a silly but effective(??) hack)
-    text = text.replaceAll('"', '\\"');
-    text = text.replaceAll("\\'", "'");
-    //text = text.replaceAll("\\", "\\\\");
-    text = text.replaceAll("<</", '{"origin": "twine","direction":"close","content":"');
-    text = text.replaceAll("<<", '{"origin": "twine","direction":"open","content":"');
-    text = text.replaceAll(">>", '"},');
-    text = text.replaceAll("</", '{"origin": "html","direction":"close","content":"');
-    text = text.replaceAll("<", '{"origin": "html","direction":"open","content":"');
-    text = text.replaceAll(">", '"},');
+function escapeHTML(str) {
+    return new Option(str).innerHTML;
+}
 
-    // Get rid of last comma
-    let jsonBuffer = `[${text.slice(0, -1)}]`;
-    console.log(jsonBuffer);
-    let parsed = JSON.parse(jsonBuffer);
-    console.log(parsed);
+function clickDecompilerLink(link) {
+    if (!Object.keys(getPassages()).includes(link)) return;
+    SugarCube.Engine.play(link);
+}
 
-    let breadcrumbTrail = [];
+function renderCondition(cond, parentElement) {
+    let el = $e("sat-if-cond", parentElement);
 
-    for (const [i, parseNode] of Object.entries(parsed)) {
-        parsed[i].type = parseNode.content.split(" ")[0]
-    }
-
-    function doesClose(type) {
-        // uuuuuuh hack
-        for (const parseNode of parsed) {
-            if (parseNode.type === type && parseNode.direction === "close") return true;
-        }
-        return false;
-    }
-
-    let nodes = [];
-
-    function getCurrentAdoptingParent() {
-        if (!nodes.length) return nodes;
-        let possibleParent = nodes[nodes.length - 1];
-
-        let goodParents = [];
-
-        while (possibleParent) {
-            if (!possibleParent.completed) goodParents.push(possibleParent);
-            possibleParent = possibleParent.children[possibleParent.children - 1];
-        }
-        console.log(goodParents);
-        if (!goodParents.length) throw new Error("Nobody wants to adopt :(");
-
-        // Deepest accepting parent
-        return goodParents[goodParents.length - 1].children;
-    }
-
-    for (const parseNode of parsed) {
-        if (parseNode.direction === "open") {
-            let nodeCompleted = !doesClose(parseNode.type);
-            let parentReference = getCurrentAdoptingParent();
-
-            let node = {
-                origin: parseNode.origin,
-                type: parseNode.type,
-                content: parseNode.content,
-                completed: nodeCompleted,
-                children: []
-            };
-            parentReference.push(node)
-
-            if (nodeCompleted) continue;
-
-            breadcrumbTrail.push({ origin: parseNode.origin, type: parseNode.type, node: node });
-            console.log("entering", breadcrumbTrail);
+    for (const chunk of cond.split(" ")) {
+        if (chunk[0] === "$") {
+            $e("sat-if-var", el, { innerText: chunk });
+            // TODO: Jump to var
         } else {
-            // Closing
-            console.log(parseNode)
-            let lastBreadcrumb = breadcrumbTrail[breadcrumbTrail.length - 1];
-
-            if (lastBreadcrumb.origin !== parseNode.origin) throw new Error(`Origin mismatch: breadcrumb ${lastBreadcrumb.origin}, parsenode ${parseNode.origin}`);
-            if (lastBreadcrumb.type !== parseNode.type) throw new Error(`Type mismatch: breadcrumb ${lastBreadcrumb.type}, parsenode ${parseNode.type}`);
-
-            lastBreadcrumb.node.completed = true;
-
-            breadcrumbTrail = breadcrumbTrail.slice(0, -1);
-            console.log("exiting");
+            el.append(chunk);
         }
     }
+}
 
-    return nodes;
+function reconstructPassage(tokens, parentElement) {
+    for (const token of tokens) {
+        let el;
+        switch (token.type) {
+            case "text":
+                $e("sat-text", parentElement, { innerText: token.content });
+                break;
+            case "link":
+                let text = `[[${token.url}]]`
+                if (token.linkText) {
+                    text = `[[${token.linkText}|${token.url}]]`
+                }
+                const link = $e("sat-link", parentElement, { innerText: text });
+                link.addEventListener("click", function () {
+                    clickDecompilerLink(token.url);
+                })
+                break;
+            case "set":
+                el = $e("sat-set", parentElement, { innerText: "<<set {var} = {val}>>" });
+                // Ugly but it works
+                el.innerHTML = el.innerHTML.replaceAll("{var}", `<sat-set-name>${escapeHTML(token.varName)}</sat-set-name>`);
+                el.innerHTML = el.innerHTML.replaceAll("{val}", `<sat-set-value>${escapeHTML(token.varValue)}</sat-set-value>`);
+                break;
+            case "if":
+                el = $e("sat-if", parentElement, { innerText: "<<if " });
+                renderCondition(token.condition, el);
+                el.append(">>");
+                break;
+            case "include":
+                el = $e("sat-include", parentElement, { innerText: '<<include "{cond}">>' });
+                // TODO: Hotlinking
+                el.innerHTML = el.innerHTML.replaceAll("{cond}", `<sat-include-passage>${escapeHTML(token.passage)}</sat-include-passage>`);
+                break;
+            case "endif":
+            case "else":
+                $e(`sat-${token.type}`, parentElement, { innerText: `<<${token.type}>>` });
+                break;
+            default:
+                console.warn("??", token.type);
+        }
+    }
 }
