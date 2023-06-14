@@ -22,6 +22,8 @@ let errorListeners = [];
 if (!window.wrappedJSObject.SA_OLDOUT) {
     exportFunction(window.wrappedJSObject.out.bind({}), window, { defineAs: "SA_OLDOUT" });
     exportFunction(window.wrappedJSObject.err.bind({}), window, { defineAs: "SA_OLDERR" });
+    //exportFunction(window.wrappedJSObject.Module.print.bind({}), window, { defineAs: "SA_OLDOUT" });
+    //exportFunction(window.wrappedJSObject.Module.printErr.bind({}), window, { defineAs: "SA_OLDERR" });
 }
 
 function noProp(event) { event.stopPropagation(); }
@@ -35,7 +37,10 @@ function isEngineOutputAnnoying(text) {
         // Ignore exceptions from unwritable DBs due to what I assume is private mode
         "a mutation operation was attempted on",
     ]) {
-        if (t.includes(text.toLowerCase())) return true;
+        if (t.includes(annoying.toLowerCase())) {
+            console.log("ANNOYING!")
+            return true;
+        }
     }
 
     return false;
@@ -170,8 +175,9 @@ function execRawExpectOutput(code) {
 }
 
 async function getRenpyVars() {
-    let out = await execRawExpectOutput(`renpy.exports.SA_EXPORT({k: renpy.pri_store[k] for k in renpy.pri_store.ever_been_changed if k in renpy.pri_store})`);
-    return JSON.parse(out);
+    //let out = await execRawExpectOutput(`renpy.exports.SA_EXPORT({k: renpy.pri_store[k] for k in renpy.pri_store.ever_been_changed if k in renpy.pri_store})`);
+    //return JSON.parse(out);
+    return []
 }
 
 

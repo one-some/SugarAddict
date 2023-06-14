@@ -148,6 +148,8 @@ export function renderVariable(key, value, parent, index, familyTree = null, rec
 
     container.style.backgroundColor = getRecursionCSSColor(recursionLevel, index);
 
+    if (value === undefined) value = null;
+
 
     let type = "?";
     if (value === null) {

@@ -197,6 +197,9 @@ async function initPatches(tabs) {
     }
 }
 
+function PATCH_1337(...x) { return true; }
+exportFunction(PATCH_1337, window, { defineAs: "SA_PATCH_1337" });
+
 /* - Passage Data - */
 
 function PATCH_TRUE() { return true; }
