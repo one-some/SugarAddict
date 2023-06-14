@@ -184,7 +184,7 @@ export function renderVariable(
         type = "number";
     } else if (typeof value === "string") {
         type = "string";
-    } else if (value instanceof Array) {
+    } else if (Array.isArray(value)) {
         type = "array";
     } else if (value.constructor.name === "Object") {
         type = "object";
