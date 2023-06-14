@@ -3,25 +3,28 @@
   "name": "SugarAddict",
   "version": "0.2",
   "description": "Story game manipulation tool",
-
   "icons": {
     "48": "logo.png"
   },
-
   "browser_action": {
     "default_icon": {
       "48": "logo.png"
     }
   },
-
   "background": {
-    "scripts": ["background.js"]
+    "scripts": [
+      "background.js"
+    ]
   },
-
   "content_scripts": [
     {
-      "matches": ["*://*/*", "file://*/*"],
-      "js": ["main.js"]
+      "matches": [
+        "*://*/*",
+        "file://*/*"
+      ],
+      "js": [
+        "main.js"
+      ]
     }
   ]
 }
