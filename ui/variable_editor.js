@@ -214,9 +214,7 @@ export function renderVariable(
     });
     if (dimKey) keyLabel.style.opacity = "0.4";
 
-    let hasChildren =
-        (value !== null && value.constructor.name === "Object") ||
-        value instanceof Array;
+    let hasChildren = ["object", "array"].includes(type);
 
     let rightBit = $e("div", container, { classes: ["sa-var-right"] });
     let valueLabel = $e("span", rightBit, {
@@ -286,7 +284,7 @@ export function renderVariable(
         // Special cases for array and object
         container.classList.add("sa-clickable");
 
-        let dimChildKey = value instanceof Array;
+        let dimChildKey = type === "array";
         let childContainer = $e("div", parent, {
             classes: ["sa-var-folder", "sa-contracted"],
             "style.borderLeft": "1px solid",
