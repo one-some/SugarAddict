@@ -36,11 +36,24 @@
 #sa-window-container {
     position: fixed;
     width: 600px;
+    height: 400px;
     top: 0px;
     left: 0px;
+    z-index: 999999;
+}
+
+#sa-window-contents {
     display: flex;
     flex-direction: column;
-    z-index: 999999;
+    height: 100%;
+}
+
+.sa-resize-handle {
+    position: absolute;
+    /* Debug */
+    /* background-color: red; */
+    height: 25px;
+    width: 25px;
 }
 
 #sa-topbar {
@@ -72,7 +85,7 @@
     display: flex;
     flex-direction: row;
     background-color: var(--sa-window);
-    height: 400px;
+    min-height: 0;
 }
 
 #sa-tabbar {
