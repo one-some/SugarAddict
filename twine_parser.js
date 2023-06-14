@@ -72,7 +72,7 @@ export function parse(text) {
                 i++;
                 continue;
             } else {
-                console.warn("Uhhh");
+                // console.warn("Uhhh");
             }
         }
 
@@ -87,7 +87,6 @@ export function parse(text) {
 
         if (_buf.type === "link") {
             if (char === "|") {
-                console.log("HOO");
                 if (_buf.stage === "url") console.warn("What");
                 _buf.linkText = _buf.content;
                 _buf.url = "";

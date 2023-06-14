@@ -13,6 +13,15 @@ function log(...args) {
     console.log("[SA @ VariableEditor]", ...args);
 }
 
+function recursivelyMakeChildrenVisible(varPath) {
+    for (const varContainer of document.getElementsByClassName("sa-var-container")) {
+        const targetVarPath = varContainer.getAttribute("var-path");
+        if (!targetVarPath) continue;
+        if (!targetVarPath.startsWith(varPath + ".")) continue;
+        varContainer.classList.remove("sa-hidden");
+    }
+}
+
 export async function varEditorInit(
     setVar,
     getVars,
@@ -32,28 +41,46 @@ export async function varEditorInit(
 
     searchElements.bar.addEventListener("input", function () {
         let query = processForSearch(searchElements.bar.value);
+        let baseMatchPaths = [];
 
-        for (const varContainer of document.getElementsByClassName(
-            "sa-toplevel-var"
-        )) {
-            // Show all if no query
+        for (const varContainer of document.getElementsByClassName("sa-var-container")) {
+            // If no query, show everything
             if (!query) {
+                // TODO: Respect folded
                 varContainer.classList.remove("sa-hidden");
                 continue;
             }
 
-            let name = processForSearch(
-                varContainer.querySelector(".sa-var-name").innerText
-            );
-            let value = processForSearch(
+            const nameEl = varContainer.querySelector(".sa-var-name");
+            if (!nameEl) continue;
+            const name = processForSearch(nameEl.innerText);
+
+            const value = processForSearch(
                 varContainer.querySelector(".sa-var-value").innerText
             );
 
-            // If name or value match, show. Otherwise hide
-            varContainer.classList.toggle(
-                "sa-hidden",
-                !(name.includes(query) || value.includes(query))
-            );
+            const matching = name.includes(query) || value.includes(query);
+            const varPath = varContainer.getAttribute("var-path");
+
+            if (matching) {
+                baseMatchPaths.push(varPath);
+                varContainer.classList.remove("sa-hidden");
+
+                // Walk up the tree and reveal parents
+                let pathBits = [];
+
+                for (const pathBit of varPath.split(".")) {
+                    pathBits.push(pathBit);
+                    let elVar = $el(`[var-path="${pathBits.join('.')}"]`);
+                    elVar.classList.remove("sa-hidden");
+                }
+            } else {
+                varContainer.classList.add("sa-hidden");
+            }
+        }
+
+        for (const match of baseMatchPaths) {
+            recursivelyMakeChildrenVisible(match);
         }
     });
 

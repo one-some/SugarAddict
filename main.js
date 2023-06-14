@@ -7,9 +7,9 @@ browser.runtime.onMessage.addListener(function (data) {
     if (data === "init") tryInit();
 });
 
-document.addEventListener("error", function (event) {
-    alert(`${event.error} @ ${event.filename}:${event.lineno}`);
-});
+// document.addEventListener("error", function (event) {
+//     alert(`${event.error} @ ${event.filename}:${event.lineno}`);
+// });
 
 function patchCleverTricks() {
     // Some developers are sneaky and try to prevent editing of
