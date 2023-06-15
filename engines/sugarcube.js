@@ -296,7 +296,15 @@ export async function initSugarCube() {
         decompilePassage(targetPassage);
     });
 
-    $e("label", decompBottomBar, { for: "sa-setting-fancy-proc", innerText: "Fancy Processing" });
+    $e(
+        "label",
+        decompBottomBar,
+        {
+            for: "sa-setting-fancy-proc",
+            innerText: "Fancy Processing",
+            title: "Still has some bugs, code returned may be incorrect"
+        }
+    );
 
 
     await initPatches(tabs);
