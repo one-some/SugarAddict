@@ -213,7 +213,7 @@ export function renderVariable(
         type = "string";
     } else if (Array.isArray(value)) {
         type = "array";
-    } else if (value.constructor.name === "Object") {
+    } else if (typeof value === "object") {
         type = "object";
     }
 
@@ -241,13 +241,20 @@ export function renderVariable(
     });
     if (dimKey) keyLabel.style.opacity = "0.4";
 
-    let hasChildren = ["object", "array"].includes(type);
+    let valueAppearance = value;
+    if (type === "array") {
+        valueAppearance = ">";
+    } else if (type === "object") {
+        valueAppearance = "}";
+    }
 
-    let rightBit = $e("div", container, { classes: ["sa-var-right"] });
-    let valueLabel = $e("span", rightBit, {
-        innerText: hasChildren ? ">" : value,
+    const rightBit = $e("div", container, { classes: ["sa-var-right"] });
+    const valueLabel = $e("span", rightBit, {
+        innerText: valueAppearance,
         classes: ["sa-var-value", typeClass],
     });
+
+    const hasChildren = ["object", "array"].includes(type);
 
     if (!hasChildren) {
         let lockButton = $e("span", rightBit, {

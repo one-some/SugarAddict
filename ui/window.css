@@ -298,6 +298,7 @@ sat-link,
 sat-include-passage {
     color: lightblue;
     cursor: pointer;
+    text-decoration: underline;
 }
 
 sat-set-name {
