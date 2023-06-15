@@ -337,14 +337,14 @@ exportFunction(PATCH_TRUE, window, { defineAs: "SA_PATCH_TRUE" });
 
 function getPassages() {
     if (SugarCube.version.major === 1) return SugarCube.tale.passages;
-
-    let ret = {};
-    for (const dat of SugarCube.Story.lookupWith(
-        window.wrappedJSObject.SA_PATCH_TRUE
-    )) {
-        ret[dat.title] = dat;
-    }
-    return ret;
+    return SugarCube.Story.passages;
+    // let ret = {};
+    // for (const dat of SugarCube.Story.lookupWith(
+    //     window.wrappedJSObject.SA_PATCH_TRUE
+    // )) {
+    //     ret[dat.title] = dat;
+    // }
+    // return ret;
 }
 
 function processForSearch(string) {
