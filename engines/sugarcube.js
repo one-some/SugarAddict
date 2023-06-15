@@ -22,6 +22,7 @@ if (SugarCube.version.major === 1) {
 }
 
 // HACK: Global util
+let util;
 let $e = () => null;
 let $el = () => null;
 
@@ -31,7 +32,7 @@ export async function initSugarCube() {
     console.info(SugarCube);
 
     // HACK: Global util
-    const util = await import(browser.runtime.getURL("ui/util.js"));
+    util = await import(browser.runtime.getURL("ui/util.js"));
     $e = util.$e;
     $el = util.$el;
 
@@ -131,13 +132,27 @@ export async function initSugarCube() {
         for (const [name, data] of Object.entries(getPassages())) {
             let passage = $e("div", passageContainer, { classes: ["sa-passage"] });
             $e("span", passage, { innerText: name, classes: ["sa-passage-name"] });
-            let jumpButton = $e("span", passage, {
-                innerText: "Jump",
-                classes: ["sa-clickable"],
+
+            let buttons = $e("span", passage);;
+
+            let jumpButton = $e("span", buttons, {
+                innerText: "[Jump]",
+                classes: ["sa-clickable", "sa-jump-btn"],
             });
 
             jumpButton.addEventListener("click", function () {
                 SugarCube.Engine.play(name);
+            });
+
+            let decompButton = $e("span", buttons, {
+                innerText: "[View]",
+                classes: ["sa-clickable", "sa-view-passage-btn"],
+            });
+
+            decompButton.addEventListener("click", function () {
+                targetPassage = name;
+                decompilePassage(name);
+                tabs.decompiler.focus();
             });
         }
     }
@@ -238,20 +253,51 @@ export async function initSugarCube() {
 
     /* Decompiler */
 
-    const codeContainer = $e("div", tabs.decompiler.content);
+    const codeContainer = $e("div", tabs.decompiler.content, { id: "sa-code-container" });
+    let targetPassage;
 
     function decompilePassage(passageName) {
-        let passage = getPassages()[passageName];
-        let tokens = TwineParser.parse(passage.element.innerText);
-        console.info(tokens);
+        const passage = getPassages()[passageName];
         codeContainer.innerText = "";
-        // codeContainer.innerText = passage.element.innerText;
-        reconstructPassage(tokens, codeContainer);
+
+        if (decompFancyInput.checked) {
+            const tokens = TwineParser.parse(passage.element.innerText);
+            reconstructPassage(tokens, codeContainer);
+        } else {
+            codeContainer.innerText = passage.element.innerText;
+        }
     }
 
     document.addEventListener("sc-passagechange", function (event) {
+        targetPassage = event.detail;
         decompilePassage(event.detail);
     });
+
+    tabs.decompiler.leaveHandlers.push(function () {
+        if (targetPassage === currentPassage) return;
+        targetPassage = currentPassage;
+        decompilePassage(currentPassage);
+    });
+
+    const decompBottomBar = $e("div", tabs.decompiler.content, { id: "sa-decomp-bottom-bar" });
+
+    const decompFancyInput = $e(
+        "input",
+        decompBottomBar,
+        {
+            id: "sa-setting-fancy-proc",
+            type: "checkbox",
+            classes: ["sa-red-green"],
+            "checked": true
+        }
+    );
+
+    decompFancyInput.addEventListener("change", function () {
+        decompilePassage(targetPassage);
+    });
+
+    $e("label", decompBottomBar, { for: "sa-setting-fancy-proc", innerText: "Fancy Processing" });
+
 
     await initPatches(tabs);
 }
@@ -272,6 +318,7 @@ async function initPatches(tabs) {
             button.addEventListener("click", patch.func);
         }
     } catch (error) {
+        $e("p", tabs.patches.content, { classes: ["sa-yellow"], innerText: "No patches available for current story." });
         console.log("No patches for current story! :^(", error);
     }
 }

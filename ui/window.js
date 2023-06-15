@@ -161,7 +161,16 @@ export async function makeWindow(tabs) {
     });
 
     // Tabs
+    let currentTabId;
     function switchTab(tabId) {
+        if (currentTabId) {
+            for (const func of tabs[currentTabId].leaveHandlers) {
+                func();
+            }
+        }
+
+        currentTabId = tabId;
+
         for (const tabContent of document.querySelectorAll(".sa-tab-content")) {
             tabContent.classList.add("sa-hidden");
         }
@@ -192,7 +201,11 @@ export async function makeWindow(tabs) {
             "tab-id": tabId,
             classes: ["sa-tab-content", "sa-hidden"],
         });
+
         tabs[tabId].content = tabContent;
+
+        tabs[tabId].focus = () => switchTab(tabId);
+        tabs[tabId].leaveHandlers = [];
     }
 
     tabBar.children[0].click();
