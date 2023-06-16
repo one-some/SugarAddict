@@ -25,58 +25,61 @@ export function parse(text) {
         const char = text[i];
         const nextChar = text[i + 1];
 
-        if (peek(text, i, "<<set")) {
-            i += 4;
-            flushBuffer();
-            bufferedToken.type = "set";
-            continue;
-        } else if (peek(text, i, "<<if")) {
-            i += 3;
-            flushBuffer();
-            bufferedToken.type = "if";
-            continue;
-        } else if (peek(text, i, "<<include")) {
-            i += 8;
-            flushBuffer();
-            bufferedToken.type = "include";
-            continue;
-        } else if (peek(text, i, "<<else>>")) {
-            i += 7;
-            flushBuffer();
-            bufferedToken.type = "else";
-            flushBuffer();
-            continue;
-        } else if (peek(text, i, "<<endif>>")) {
-            i += 8;
-            flushBuffer();
-            bufferedToken.type = "endif";
-            flushBuffer();
-            continue;
+        let peekSuccess = false;
+        for (const peekCandidate of [
+            { matchText: "<<set", tokenType: "set", wholeToken: false },
+            { matchText: "<<if", tokenType: "if", wholeToken: false },
+            { matchText: "<<include", tokenType: "include", wholeToken: false },
+            { matchText: "<<else>>", tokenType: "else", wholeToken: true },
+            { matchText: "<<endif>>", tokenType: "endif", wholeToken: true },
+            // { text: "/%", tokenType: "comment", wholeToken: false },
+
+        ]) {
+            if (peek(text, i, peekCandidate.matchText)) {
+                i += peekCandidate.matchText.length - 1;
+                flushBuffer();
+                bufferedToken.type = peekCandidate.tokenType;
+                if (peekCandidate.wholeToken) flushBuffer();
+                peekSuccess = true;
+                break;
+            }
         }
+        if (peekSuccess) continue;
 
         if (char === ">" && char === nextChar) {
+            // BEWARE: Deletes bufferedToken.content
+            let closeToken = true;
+
             if (bufferedToken.type === "set") {
-                let [varName, varValue] = bufferedToken.content.replaceAll(" ", "").split("=");
-                delete bufferedToken.content;
-                bufferedToken.varName = varName;
-                bufferedToken.varValue = varValue;
-                flushBuffer();
-                i++;
-                continue;
+                bufferedToken.assignments = {};
+                for (const assignmentExpression of bufferedToken.content.split(",")) {
+                    let varName, varValue;
+                    // https://www.motoslave.net/sugarcube/2/docs/#macros-macro-set
+                    if (assignmentExpression.includes("=")) {
+                        // Using standard JavaScript operators
+                        [varName, varValue] = assignmentExpression.replaceAll(" ", "").split("=");
+                    } else {
+                        // Using the TwineScript "to" operator
+                        [varName, varValue] = assignmentExpression.split(" to ").map(x => x.replaceAll(" ", ""));
+                    }
+
+                    bufferedToken.assignments[varName] = varValue;
+
+                }
             } else if (bufferedToken.type === "if") {
                 bufferedToken.condition = bufferedToken.content.trim();
-                delete bufferedToken.content;
-                flushBuffer();
-                i++;
-                continue;
             } else if (bufferedToken.type === "include") {
                 bufferedToken.passage = bufferedToken.content.replaceAll('"', "").trim();
+            } else {
+                closeToken = false;
+                // console.warn("Uhhh");
+            }
+
+            if (closeToken) {
                 delete bufferedToken.content;
                 flushBuffer();
                 i++;
                 continue;
-            } else {
-                // console.warn("Uhhh");
             }
         }
 

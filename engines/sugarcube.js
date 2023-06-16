@@ -479,18 +479,22 @@ function reconstructPassage(tokens, parentElement) {
                 });
                 break;
             case "set":
+                let assignmentSkeletons = [];
+
+                for (const [name, value] of Object.entries(token.assignments)) {
+                    assignmentSkeletons.push([
+                        `<sat-set-name>${escapeHTML(name)}</sat-set-name>`,
+                        `<sat-set-value>${escapeHTML(value)}</sat-set-value>`
+                    ].join(" = "));
+                }
+
+                // assignmentSkeletons is now an array of "name = value" lookin' strings
+                // Coalesce these into one "assignment chunk" we can just plunk in the macro
+                const assignmentChunk = assignmentSkeletons.join(", ");
+
                 el = $e("sat-set", parentElement, {
-                    innerText: "<<set {var} = {val}>>",
+                    innerHTML: escapeHTML("<<set %s>>").replaceAll("%s", assignmentChunk)
                 });
-                // Ugly but it works
-                el.innerHTML = el.innerHTML.replaceAll(
-                    "{var}",
-                    `<sat-set-name>${escapeHTML(token.varName)}</sat-set-name>`
-                );
-                el.innerHTML = el.innerHTML.replaceAll(
-                    "{val}",
-                    `<sat-set-value>${escapeHTML(token.varValue)}</sat-set-value>`
-                );
                 break;
             case "if":
                 el = $e("sat-if", parentElement, { innerText: "<<if " });
