@@ -481,6 +481,8 @@ function reconstructPassage(tokens, parentElement) {
             case "set":
                 let assignmentSkeletons = [];
 
+                if (!token.assignments) throw new Error("Set w/o assignments");
+
                 for (const [name, value] of Object.entries(token.assignments)) {
                     assignmentSkeletons.push([
                         `<sat-set-name>${escapeHTML(name)}</sat-set-name>`,
@@ -513,10 +515,14 @@ function reconstructPassage(tokens, parentElement) {
                     )}</sat-include-passage>`
                 );
                 break;
-            case "endif":
             case "else":
                 $e(`sat-${token.type}`, parentElement, {
-                    innerText: `<<${token.type}>>`,
+                    innerText: `<<else>>`,
+                });
+                break;
+            case "endif":
+                $e(`sat-${token.type}`, parentElement, {
+                    innerText: `<</if>>`,
                 });
                 break;
             case "comment":
