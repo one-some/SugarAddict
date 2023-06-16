@@ -13,6 +13,8 @@ Extension for editing the state of story-oriented web games.
 - Variable editing (including complicated-ish things like nested objects and arrays and such)
 - Passage jump
 - Passage code viewer
+- Syntax highlighting in code viewer
+- Open specific passage in code viewer
 
 ### RPG Maker Games
 
@@ -33,13 +35,10 @@ Extension for editing the state of story-oriented web games.
 
 ### SugarCube
 
-- Syntax highlighting in code viewer
 - Passage editing in code viewer
 - Check patching in code viewer
 - Click variable in code viewer to jump to it in variable editor
 - Passage content search
-- Open specific passage in code viewer
-- Better support for different versions and configurations, currently game compatibility isn't the best
 
 ### RPG Maker
 

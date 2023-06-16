@@ -113,6 +113,45 @@ export async function initSugarCube() {
     const currentPassageLabel = $e("p", tabs.passages.content, {
         classes: ["sa-clickable"],
     });
+
+    const passageListingModeContainer = $e("div", tabs.passages.content, { id: "sa-passage-modes" });
+
+    let passageModes = {};
+    let currentPassageMode;
+
+    for (const [modeId, modeData] of Object.entries({
+        "index": { label: "Index", tooltip: "Search quickly through the titles of passages" },
+        "deep": { label: "Deep Search", tooltip: "Do a more rigorous search through the content of passages" }
+    })) {
+        let modeDat = { bodyEl: null, tabEl: null };
+        passageModes[modeId] = modeDat;
+
+        const bodyId = `sa-passage-mode-body-${modeId}`;
+        modeDat.bodyEl = $e("div", tabs.passages.content, { classes: ["sa-passage-mode-body"], id: bodyId });
+
+        modeDat.tabEl = $e(
+            "div",
+            passageListingModeContainer,
+            { innerText: modeData.label, classes: ["sa-passage-mode"], "sap-tab": bodyId }
+        );
+
+        modeDat.tabEl.addEventListener("click", function () {
+            currentPassageMode = modeDat.mode;
+
+            for (const alienModeDat of Object.values(passageModes)) {
+                // Make other tabs non-glowey
+                alienModeDat.tabEl.classList.remove("sa-active");
+
+                // Hide the body
+                alienModeDat.bodyEl.classList.add("sa-hidden");
+            }
+
+            // Mark current tab as glowey and show body
+            modeDat.tabEl.classList.add("sa-active");
+            modeDat.bodyEl.classList.remove("sa-hidden");
+        });
+    }
+
     document.addEventListener("sc-passagechange", function (event) {
         currentPassage = event.detail;
         currentPassageLabel.innerText = `Current: ${event.detail}`;
@@ -122,55 +161,58 @@ export async function initSugarCube() {
         SugarCube.Engine.play(currentPassage);
     });
 
-    const passageContainer = $e("div", tabs.passages.content, {
+    const passageContainer = $e("div", passageModes.index.bodyEl, {
         id: "sa-passage-container",
         classes: ["sa-scroller"],
     });
-    const passageSearchbar = $e("input", tabs.passages.content);
+    const passageSearchbar = $e("input", passageModes.index.bodyEl, { placeholder: "Search titles" });
 
-    function initPassages() {
-        for (const [name, data] of Object.entries(getPassages())) {
-            let passage = $e("div", passageContainer, { classes: ["sa-passage"] });
-            $e("span", passage, { innerText: name, classes: ["sa-passage-name"] });
+    function renderPassageListing(passageName, parent) {
+        let passage = $e("div", parent, { classes: ["sa-passage"] });
+        $e("span", passage, { innerText: passageName, classes: ["sa-passage-name"] });
 
-            let buttons = $e("span", passage);;
+        let buttons = $e("span", passage);;
 
-            let jumpButton = $e("span", buttons, {
-                innerText: "[Jump]",
-                classes: ["sa-clickable", "sa-jump-btn"],
-            });
+        let jumpButton = $e("span", buttons, {
+            innerText: "[Jump]",
+            classes: ["sa-clickable", "sa-jump-btn"],
+        });
 
-            jumpButton.addEventListener("click", function () {
-                SugarCube.Engine.play(name);
-            });
+        jumpButton.addEventListener("click", function () {
+            SugarCube.Engine.play(passageName);
+        });
 
-            let decompButton = $e("span", buttons, {
-                innerText: "[View]",
-                classes: ["sa-clickable", "sa-view-passage-btn"],
-            });
+        let decompButton = $e("span", buttons, {
+            innerText: "[View]",
+            classes: ["sa-clickable", "sa-view-passage-btn"],
+        });
 
-            decompButton.addEventListener("click", function () {
-                targetPassage = name;
-                decompilePassage(name);
-                tabs.decompiler.focus();
-            });
-        }
+        decompButton.addEventListener("click", function () {
+            targetPassage = passageName;
+            decompilePassage(passageName);
+            tabs.decompiler.focus();
+        });
+
     }
-    initPassages();
+
+    for (const name of Object.keys(getPassages())) {
+        renderPassageListing(name, passageContainer);
+    }
 
     passageSearchbar.addEventListener("input", function () {
-        let query = processForSearch(passageSearchbar.value);
+        const query = processForSearch(passageSearchbar.value);
+
         for (const passageContainer of document.getElementsByClassName(
             "sa-passage"
         )) {
-            let name = passageContainer.querySelector(".sa-passage-name").innerText;
+            const name = passageContainer.querySelector(".sa-passage-name").innerText;
             if (!query || processForSearch(name).includes(query)) {
                 passageContainer.classList.remove("sa-hidden");
             } else {
                 passageContainer.classList.add("sa-hidden");
             }
         }
-        updatePassageVisualPolarity();
+        // updatePassageVisualPolarity();
     });
 
     function updatePassageVisualPolarity() {
@@ -185,6 +227,40 @@ export async function initSugarCube() {
             }
         }
     }
+
+    // Deep
+
+    const deepPassageContainer = $e("div", passageModes.deep.bodyEl, {
+        id: "sa-passage-search-container",
+        classes: ["sa-scroller"],
+    });
+    const deepPassageSearchbarCont = $e("div", passageModes.deep.bodyEl, { id: "sa-deep-searchbar-cont" });
+    const deepPassageSearchbar = $e("input", deepPassageSearchbarCont, { placeholder: "Search passages" });
+    const deepPassageSearchButton = $e("button", deepPassageSearchbarCont, { innerText: "Search" });
+
+    deepPassageSearchbar.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") deepPassageSearchButton.click();
+    });
+
+    deepPassageSearchButton.addEventListener("click", function () {
+        // Deep search
+        const query = processForSearch(deepPassageSearchbar.value);
+
+        // Clear old results
+        deepPassageContainer.innerHTML = "";
+
+        for (const passage of Object.values(getPassages())) {
+            // Match either title or contents
+            if (
+                !processForSearch(passage.title).includes(query)
+                && !processForSearch(passage.element.innerText).includes(query)
+            ) continue;
+            renderPassageListing(passage.title, deepPassageContainer);
+        }
+    });
+
+    // Mark first tab active automatically
+    Object.values(passageModes)[0].tabEl.click();
 
     /* Home */
 
@@ -332,7 +408,7 @@ async function initPatches(tabs) {
 }
 
 function PATCH_1337(...x) {
-    return true;
+    return 1337;
 }
 exportFunction(PATCH_1337, window, { defineAs: "SA_PATCH_1337" });
 

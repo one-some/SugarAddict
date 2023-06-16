@@ -193,6 +193,12 @@
     display: flex;
     justify-content: space-between;
     background-color: rgb(28, 28, 28);
+    transition: background-color 0.1s;
+    padding-bottom: 2px;
+}
+
+.sa-passage:hover {
+    background-color: rgb(38, 38, 38);
 }
 
 [tab-id="passages"],
@@ -204,10 +210,18 @@
 }
 
 #sa-passage-container,
-#sa-var-cont {
+#sa-var-cont,
+#sa-passage-search-container {
     flex-grow: 1;
     overflow-y: auto;
     scrollbar-width: thin;
+}
+
+.sa-passage-mode-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 0;
 }
 
 .sa-passage.sa-shiny {
@@ -372,6 +386,34 @@ sat-else {
 
 .sa-view-passage-btn {
     color: rgb(0, 132, 255);
+}
+
+#sa-passage-modes {
+    display: flex;
+    min-height: 32px;
+}
+
+.sa-passage-mode {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+    flex-basis: 0;
+    background-color: var(--sa-tab);
+    user-select: none;
+    cursor: pointer;
+}
+
+.sa-passage-mode.sa-active {
+    filter: brightness(150%);
+}
+
+#sa-deep-searchbar-cont {
+    display: flex;
+}
+
+#sa-deep-searchbar-cont input {
+    flex-grow: 1;
 }
 
 /* RPG Maker */
