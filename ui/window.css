@@ -272,7 +272,7 @@
 
 #sa-code-container {
     overflow-y: auto;
-    ;
+    white-space: pre-wrap;
     flex-grow: 1;
 }
 
