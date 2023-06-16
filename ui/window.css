@@ -362,7 +362,7 @@ sat-set-name {
 }
 
 sat-set-value {
-    color: lightgreen;
+    color: lightseagreen;
 }
 
 sat-if-cond {
@@ -376,6 +376,10 @@ sat-if-var {
 sat-endif,
 sat-else {
     color: #e67de6;
+}
+
+sat-comment {
+    color: lightgreen;
 }
 
 /* SC Passages */

@@ -519,6 +519,11 @@ function reconstructPassage(tokens, parentElement) {
                     innerText: `<<${token.type}>>`,
                 });
                 break;
+            case "comment":
+                $e(`sat-comment`, parentElement, {
+                    innerText: `/%${token.text}%/`,
+                });
+                break;
             default:
                 console.warn("??", token.type);
         }

@@ -25,6 +25,7 @@ export function parse(text) {
         const char = text[i];
         const nextChar = text[i + 1];
 
+        // Generic token open (or close if its a whole token)
         let peekSuccess = false;
         for (const peekCandidate of [
             { matchText: "<<set", tokenType: "set", wholeToken: false },
@@ -32,7 +33,7 @@ export function parse(text) {
             { matchText: "<<include", tokenType: "include", wholeToken: false },
             { matchText: "<<else>>", tokenType: "else", wholeToken: true },
             { matchText: "<<endif>>", tokenType: "endif", wholeToken: true },
-            // { text: "/%", tokenType: "comment", wholeToken: false },
+            { matchText: "/%", tokenType: "comment", wholeToken: false },
 
         ]) {
             if (peek(text, i, peekCandidate.matchText)) {
@@ -46,6 +47,7 @@ export function parse(text) {
         }
         if (peekSuccess) continue;
 
+        // Generic token close
         if (char === ">" && char === nextChar) {
             // BEWARE: Deletes bufferedToken.content
             let closeToken = true;
@@ -83,6 +85,16 @@ export function parse(text) {
             }
         }
 
+        // Close comment
+        if (char === "%" && nextChar === "/") {
+            bufferedToken.text = bufferedToken.content;
+            delete bufferedToken.content;
+            flushBuffer();
+            i++;
+            continue;
+        }
+
+        // Begin link
         if (char === "[" && char === nextChar) {
             if (bufferedToken.type !== "text") console.warn("Bad things afoot!");
             i++;
@@ -93,6 +105,7 @@ export function parse(text) {
         }
 
         if (bufferedToken.type === "link") {
+            // Partition link
             if (char === "|") {
                 if (bufferedToken.stage === "url") console.warn("What");
                 bufferedToken.linkText = bufferedToken.content;
@@ -102,6 +115,7 @@ export function parse(text) {
                 continue;
             }
 
+            // Close link
             if (char === "]" && char === nextChar) {
                 if (bufferedToken.stage !== "url") {
                     console.warn("No url?");
