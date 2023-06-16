@@ -1,20 +1,24 @@
+// Refer to https://www.motoslave.net/sugarcube/2/docs/
+// -
+// Probably not the best or most readable code, but frankly I'm surprised it works
+
 function peek(string, index, word) {
     return word === string.slice(index, index + word.length);
 }
 
 export function parse(text) {
-    let out = [];
-    let _buf = { type: "text", content: "", stage: null };
+    let tokens = [];
+    let bufferedToken = { type: "text", content: "", stage: null };
 
     function flushBuffer() {
-        let buf = { ..._buf };
+        let buf = { ...bufferedToken };
         if (!buf.content) delete buf.content;
         delete buf.stage;
 
         if (buf.type !== "text" || buf.content) {
-            out.push(buf);
+            tokens.push(buf);
         }
-        _buf = { type: "text", content: "", stage: null };
+        bufferedToken = { type: "text", content: "", stage: null };
     }
 
     for (let i = 0; i < text.length; i++) {
@@ -24,50 +28,50 @@ export function parse(text) {
         if (peek(text, i, "<<set")) {
             i += 4;
             flushBuffer();
-            _buf.type = "set";
+            bufferedToken.type = "set";
             continue;
         } else if (peek(text, i, "<<if")) {
             i += 3;
             flushBuffer();
-            _buf.type = "if";
+            bufferedToken.type = "if";
             continue;
         } else if (peek(text, i, "<<include")) {
             i += 8;
             flushBuffer();
-            _buf.type = "include";
+            bufferedToken.type = "include";
             continue;
         } else if (peek(text, i, "<<else>>")) {
             i += 7;
             flushBuffer();
-            _buf.type = "else";
+            bufferedToken.type = "else";
             flushBuffer();
             continue;
         } else if (peek(text, i, "<<endif>>")) {
             i += 8;
             flushBuffer();
-            _buf.type = "endif";
+            bufferedToken.type = "endif";
             flushBuffer();
             continue;
         }
 
         if (char === ">" && char === nextChar) {
-            if (_buf.type === "set") {
-                let [varName, varValue] = _buf.content.replaceAll(" ", "").split("=");
-                delete _buf.content;
-                _buf.varName = varName;
-                _buf.varValue = varValue;
+            if (bufferedToken.type === "set") {
+                let [varName, varValue] = bufferedToken.content.replaceAll(" ", "").split("=");
+                delete bufferedToken.content;
+                bufferedToken.varName = varName;
+                bufferedToken.varValue = varValue;
                 flushBuffer();
                 i++;
                 continue;
-            } else if (_buf.type === "if") {
-                _buf.condition = _buf.content.trim();
-                delete _buf.content;
+            } else if (bufferedToken.type === "if") {
+                bufferedToken.condition = bufferedToken.content.trim();
+                delete bufferedToken.content;
                 flushBuffer();
                 i++;
                 continue;
-            } else if (_buf.type === "include") {
-                _buf.passage = _buf.content.replaceAll('"', "").trim();
-                delete _buf.content;
+            } else if (bufferedToken.type === "include") {
+                bufferedToken.passage = bufferedToken.content.replaceAll('"', "").trim();
+                delete bufferedToken.content;
                 flushBuffer();
                 i++;
                 continue;
@@ -77,74 +81,38 @@ export function parse(text) {
         }
 
         if (char === "[" && char === nextChar) {
-            if (_buf.type !== "text") console.warn("Bad things afoot!");
+            if (bufferedToken.type !== "text") console.warn("Bad things afoot!");
             i++;
             flushBuffer();
-            _buf.type = "link";
-            _buf.stage = "text";
+            bufferedToken.type = "link";
+            bufferedToken.stage = "text";
             continue;
         }
 
-        if (_buf.type === "link") {
+        if (bufferedToken.type === "link") {
             if (char === "|") {
-                if (_buf.stage === "url") console.warn("What");
-                _buf.linkText = _buf.content;
-                _buf.url = "";
-                _buf.stage = "url";
-                _buf.content = "";
+                if (bufferedToken.stage === "url") console.warn("What");
+                bufferedToken.linkText = bufferedToken.content;
+                bufferedToken.url = "";
+                bufferedToken.stage = "url";
+                bufferedToken.content = "";
                 continue;
             }
 
             if (char === "]" && char === nextChar) {
-                if (_buf.stage !== "url") {
+                if (bufferedToken.stage !== "url") {
                     console.warn("No url?");
                 }
-                _buf.url = _buf.content;
-                delete _buf.content;
+                bufferedToken.url = bufferedToken.content;
+                delete bufferedToken.content;
                 flushBuffer();
                 i++;
                 continue;
             }
         }
 
-        _buf.content += char;
+        bufferedToken.content += char;
     }
 
-    return out;
-}
-
-// reconstruct
-
-function reconstructPassage(tokens) {
-    out = "";
-    for (const token of tokens) {
-        switch (token.type) {
-            case "text":
-                out += token.content;
-                break;
-            case "link":
-                if (token.linkText) {
-                    out += `[[${token.linkText}|${token.url}]]`;
-                } else {
-                    out += `[[${token.url}]]`;
-                }
-                break;
-            case "set":
-                out += `<<set ${token.varName} = ${token.varValue}>>`;
-                break;
-            case "if":
-                out += `<<if ${token.condition}>>`;
-                break;
-            case "include":
-                out += `<<include "${token.passage}">>`;
-                break;
-            case "endif":
-            case "else":
-                out += `<<${token.type}>>`;
-                break;
-            default:
-                console.warn("??", token.type);
-        }
-    }
-    return out;
+    return tokens;
 }
