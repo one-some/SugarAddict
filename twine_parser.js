@@ -2,6 +2,8 @@
 // -
 // Probably not the best or most readable code, but frankly I'm surprised it works
 
+const STRING_CHARACTERS = [`'`, `"`];
+
 function peek(string, index, word) {
     return word === string.slice(index, index + word.length);
 }
@@ -9,6 +11,11 @@ function peek(string, index, word) {
 export function parse(text) {
     let tokens = [];
     let bufferedToken = { type: "text", content: "", stage: null };
+    let parseState = {
+        inExpression: false,
+        inString: false,
+        stringPrimer: "",
+    };
 
     function flushBuffer() {
         let buf = { ...bufferedToken };
@@ -18,7 +25,9 @@ export function parse(text) {
         if (buf.type !== "text" || buf.content) {
             tokens.push(buf);
         }
+
         bufferedToken = { type: "text", content: "", stage: null };
+        parseState = { inExpression: false, inString: false };
     }
 
     for (let i = 0; i < text.length; i++) {
@@ -28,7 +37,7 @@ export function parse(text) {
         // Generic token open (or close if its a whole token)
         let peekSuccess = false;
         for (const peekCandidate of [
-            { matchText: "<<set", tokenType: "set", wholeToken: false },
+            { matchText: "<<set", tokenType: "set", wholeToken: false, opensExpression: true },
             { matchText: "<<if", tokenType: "if", wholeToken: false },
             { matchText: "<<include", tokenType: "include", wholeToken: false },
             { matchText: "<<else>>", tokenType: "else", wholeToken: true },
@@ -41,11 +50,36 @@ export function parse(text) {
                 flushBuffer();
                 bufferedToken.type = peekCandidate.tokenType;
                 if (peekCandidate.wholeToken) flushBuffer();
+                if (peekCandidate.opensExpression) parseState.inExpression = true;
                 peekSuccess = true;
                 break;
             }
         }
         if (peekSuccess) continue;
+
+        // String stuff.
+        // Is char a string primer char? Also, are we in an expression?
+        if (STRING_CHARACTERS.includes(char) && parseState.inExpression) {
+            // Are we already in a string?
+            if (parseState.inString) {
+                // If so, we may need to close it. Is this char the one that started the string?
+                if (char === parseState.stringPrimer) {
+                    parseState.inString = false;
+                }
+                // If it's not the primer character it's not our concern!
+            } else {
+                // If not, we need to open one
+                parseState.inString = true;
+                parseState.stringPrimer = char;
+            }
+        }
+
+        // If we're in a string, don't bother parsing tokens
+        if (parseState.inString) {
+            bufferedToken.content += char;
+            continue;
+        }
+
 
         // Generic token close
         if (char === ">" && char === nextChar) {
