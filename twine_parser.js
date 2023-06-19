@@ -185,7 +185,5 @@ export function parse(text) {
         bufferedToken.content += char;
     }
 
-    console.log(parseState);
-    console.log(tokens);
     return tokens;
 }

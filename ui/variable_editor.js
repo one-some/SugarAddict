@@ -379,6 +379,8 @@ async function variableChangeWatchdog() {
     for (const [k, v] of Object.entries(changes)) {
         // Update existing variable visually
         let rowEl = $el(`[var-path="${k}"]`);
+        // TODO: What's up with this?
+        if (!rowEl) continue;
         let el = rowEl.querySelector(".sa-var-value");
         if (el) el.innerText = v;
         if (rowEl) {

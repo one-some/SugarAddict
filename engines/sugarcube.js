@@ -331,13 +331,20 @@ export async function initSugarCube() {
 
     const codeContainer = $e("div", tabs.decompiler.content, { id: "sa-code-container" });
     let targetPassage;
+    let twineTokenCache = {};
 
     function decompilePassage(passageName) {
         const passage = getPassages()[passageName];
         codeContainer.innerText = "";
 
         if (decompFancyInput.checked) {
-            const tokens = TwineParser.parse(passage.element.innerText);
+            let tokens = twineTokenCache[passageName];
+
+            if (!tokens) {
+                tokens = TwineParser.parse(passage.element.innerText);
+                twineTokenCache[passageName] = tokens;
+            }
+
             reconstructPassage(tokens, codeContainer);
         } else {
             codeContainer.innerText = passage.element.innerText;
@@ -421,7 +428,10 @@ exportFunction(PATCH_TRUE, window, { defineAs: "SA_PATCH_TRUE" });
 
 function getPassages() {
     if (SugarCube.version.major === 1) return SugarCube.tale.passages;
-    return SugarCube.Story.passages;
+
+    if(SugarCube.Story.passages !== undefined) return SugarCube.Story.passages;
+
+    return SugarCube.Story.getAllRegular();
     // let ret = {};
     // for (const dat of SugarCube.Story.lookupWith(
     //     window.wrappedJSObject.SA_PATCH_TRUE
