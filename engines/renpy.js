@@ -2,8 +2,6 @@ const Module = window.wrappedJSObject.Module;
 const RenpyExec = window.wrappedJSObject.renpy_exec;
 const RenpyGet = window.wrappedJSObject.renpy_get;
 
-const win = document.defaultView;
-
 let history = [];
 let historyPointer = 0;
 
@@ -246,9 +244,9 @@ export async function initRenPyWeb() {
     if (execMethod === ExecMethods.RENPY_EXEC) {
         $e("span", tabs.home.content, {
             innerText:
-                "Exec Method: renpy_exec\nNewer RenPy version; Old (and more reliable) injection method won't work. Expect instability and bugs!",
+                "Exec Method: renpy_exec\nNewer RenPy version; Old injection method won't work. Possible instability lies ahead.",
             classes: ["sa-header"],
-            "style.color": "crimson",
+            "style.color": "gold",
         });
     } else if (execMethod === ExecMethods.PYRUN_SIMPLESTRING) {
         $e("span", tabs.home.content, {
