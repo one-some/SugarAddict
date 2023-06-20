@@ -1,12 +1,13 @@
 const Module = window.wrappedJSObject.Module;
 const RenpyExec = window.wrappedJSObject.renpy_exec;
+const RenpyGet = window.wrappedJSObject.renpy_get;
 
 const win = document.defaultView;
 
 let history = [];
 let historyPointer = 0;
 
-const execMethods = {
+const ExecMethods = {
     RENPY_EXEC: "RENPY_EXEC",
     PYRUN_SIMPLESTRING: "PYRUN_SIMPLESTRING",
 };
@@ -47,6 +48,8 @@ function isEngineOutputAnnoying(text) {
         // Ignore exceptions from unwritable DBs due to what I assume is private mode
         "a mutation operation was attempted on",
     ]) {
+
+        continue;
         if (t.includes(annoying.toLowerCase())) {
             console.log("ANNOYING!");
             return true;
@@ -61,6 +64,7 @@ exportFunction(
         if (isEngineOutputAnnoying(text)) return;
 
         // window.wrappedJSObject.SA_OLDOUT(text);
+        console.log(text);
         for (const listener of outputListeners) {
             listener(text);
         }
@@ -92,13 +96,12 @@ async function processAsyncCodeQueue() {
 
 // Run in Python VM
 function execRawPy(code) {
-    if (execMethod === execMethods.RENPY_EXEC) {
+    if (execMethod === ExecMethods.RENPY_EXEC) {
         // newer versions of renpy expose this for FREE!!! (thank you Teyut!!!!)
         // also very new versions(?) don't support pyrunsimplestring directly
-        // TODO: Support the better interface to JS added in 2020
-        // TODO: Find a better solution around this async hack!!!
-        // (.then() errors with access denied!)
-        rpExecCodeQueue.push(code);
+        setTimeout(async function () {
+            await RenpyExec(code);
+        }, 0);
     } else {
         // console.info("[SA @ _PyRun_SimpleString]", ret);
         let pointer = string2stack(code);
@@ -138,23 +141,28 @@ function string2stack(string) {
 }
 
 function initPythonVM() {
-    if (execMethod === execMethods.RENPY_EXEC) {
+    if (execMethod === ExecMethods.RENPY_EXEC) {
+        console.log("ITERNAL IT WORKS");
         let codeQueueInterval = setInterval(processAsyncCodeQueue, 15);
-    }
 
-    // Experimental optimizations
-    execRawPy("import json");
-    execRawPy("import renpy");
+        // Patch json to not error when trying to process advanced stuff
+        // execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=lambda x: f"<advanced {type(x)}>")`);
+        execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=str)`);
+    } else {
 
-    execRawPy(`renpy.pri_store = renpy.python.store_dicts["store"]`);
+        // Experimental optimizations
+        execRawPy("import json");
+        execRawPy("import renpy");
 
-    execRawPy(`
+        execRawPy(`renpy.pri_store = renpy.python.store_dicts["store"]`);
+
+        execRawPy(`
 def SA_EXPORT(val):
     import json
     print("SA_EXP|" + json.dumps(val, default=lambda x: "<advanced>"))
 renpy.exports.SA_EXPORT = SA_EXPORT`);
-
-    execRawPy(`renpy.exports.notify("SugarAddict Injected :-)")`);
+        execRawPy(`renpy.exports.notify("SugarAddict Injected :-)")`);
+    }
 
     execRawPy(`print("""[SugarAddict] RenPy VM hijack success, have fun!
 [SugarAddict] renpy.python.store_dicts["store"] is bound to renpy.pri_store for conveinence. Or... just use the variable editor.
@@ -193,16 +201,32 @@ function execRawExpectOutput(code) {
 }
 
 async function getRenpyVars() {
-    //let out = await execRawExpectOutput(`renpy.exports.SA_EXPORT({k: renpy.pri_store[k] for k in renpy.pri_store.ever_been_changed if k in renpy.pri_store})`);
-    //return JSON.parse(out);
-    return [];
+    if (execMethod === ExecMethods.RENPY_EXEC) {
+        return await RenpyGet("{k: renpy.python.store_dicts['store'][k] for k in renpy.python.store_dicts['store'].ever_been_changed if k in renpy.python.store_dicts['store']}");
+    } else {
+        //let out = await execRawExpectOutput(`renpy.exports.SA_EXPORT({k: renpy.pri_store[k] for k in renpy.pri_store.ever_been_changed if k in renpy.pri_store})`);
+        //return JSON.parse(out);
+        return [];
+    }
+}
+
+async function getRenpyLabels() {
+    if (execMethod === ExecMethods.RENPY_EXEC) {
+        return await RenpyGet("list(renpy.get_all_labels())");
+    } else {
+        return JSON.parse(
+            await execRawExpectOutput(
+                "renpy.exports.SA_EXPORT(list(renpy.exports.get_all_labels()))"
+            )
+        );
+    }
 }
 
 export async function initRenPyWeb() {
     log("Initializing Ren'PyWeb backend...");
     execMethod = Module._PyRun_SimpleString
-        ? execMethods.PYRUN_SIMPLESTRING
-        : execMethods.RENPY_EXEC;
+        ? ExecMethods.PYRUN_SIMPLESTRING
+        : ExecMethods.RENPY_EXEC;
     log(`Found execmethod ${execMethod}`);
 
     const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
@@ -219,14 +243,14 @@ export async function initRenPyWeb() {
     /* Home */
     $e("span", tabs.home.content, { innerText: "Info", classes: ["sa-header"] });
 
-    if (execMethod === execMethods.RENPY_EXEC) {
+    if (execMethod === ExecMethods.RENPY_EXEC) {
         $e("span", tabs.home.content, {
             innerText:
                 "Exec Method: renpy_exec\nNewer RenPy version; Old (and more reliable) injection method won't work. Expect instability and bugs!",
             classes: ["sa-header"],
             "style.color": "crimson",
         });
-    } else if (execMethod === execMethods.PYRUN_SIMPLESTRING) {
+    } else if (execMethod === ExecMethods.PYRUN_SIMPLESTRING) {
         $e("span", tabs.home.content, {
             innerText: "Exec Method: PyRun_SimpleString",
             classes: ["sa-header"],
@@ -363,7 +387,13 @@ for label in renpy.exports.get_all_labels():
 
         // TODO: Support numbered index for list (this casts it to string like a dict)
         let indexChain = keyChain.map((key) => `["${key}"]`).join();
-        execRawPy(`renpy.pri_store${indexChain} = json.loads("${enc}")`);
+
+        if (execMethod === ExecMethods.RENPY_EXEC) {
+            // b64 idea stolen from renpy bootloader shell thing
+            execRawPy(`renpy.python.store_dicts["store"]${indexChain} = json.loads(base64.b64decode("${btoa(enc)}").decode("utf-8"))`);
+        } else {
+            execRawPy(`renpy.pri_store${indexChain} = json.loads("${enc}")`);
+        }
     }
 
     function logVariableChange(k, v) {
@@ -408,11 +438,7 @@ for label in renpy.exports.get_all_labels():
     });
     const labelSearchBar = $e("input", tabs.labels.content);
 
-    const labels = JSON.parse(
-        await execRawExpectOutput(
-            "renpy.exports.SA_EXPORT(list(renpy.exports.get_all_labels()))"
-        )
-    );
+    const labels = await getRenpyLabels();
     log("Labels:", labels);
 
     for (const labelName of labels) {
