@@ -84,14 +84,6 @@ exportFunction(
     { defineAs: "err" }
 );
 
-let rpExecCodeQueue = [];
-async function processAsyncCodeQueue() {
-    // Awful hack to make async thing work
-    let code = rpExecCodeQueue.pop();
-    if (!code) return;
-    let r = await RenpyExec(code);
-}
-
 // Run in Python VM
 function execRawPy(code) {
     if (execMethod === ExecMethods.RENPY_EXEC) {
@@ -140,9 +132,6 @@ function string2stack(string) {
 
 function initPythonVM() {
     if (execMethod === ExecMethods.RENPY_EXEC) {
-        console.log("ITERNAL IT WORKS");
-        let codeQueueInterval = setInterval(processAsyncCodeQueue, 15);
-
         // Patch json to not error when trying to process advanced stuff
         // execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=lambda x: f"<advanced {type(x)}>")`);
         execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=str)`);
@@ -222,9 +211,7 @@ async function getRenpyLabels() {
 
 export async function initRenPyWeb() {
     log("Initializing Ren'PyWeb backend...");
-    execMethod = Module._PyRun_SimpleString
-        ? ExecMethods.PYRUN_SIMPLESTRING
-        : ExecMethods.RENPY_EXEC;
+    execMethod = RenpyExec ?  ExecMethods.RENPY_EXEC : ExecMethods.PYRUN_SIMPLESTRING;
     log(`Found execmethod ${execMethod}`);
 
     const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
