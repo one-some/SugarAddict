@@ -131,10 +131,11 @@ function string2stack(string) {
 }
 
 function initPythonVM() {
+    // Be careful; no f-strings here. Engine may be running on python2.
     if (execMethod === ExecMethods.RENPY_EXEC) {
         // Patch json to not error when trying to process advanced stuff
-        // execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=lambda x: f"<advanced {type(x)}>")`);
-        execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=str)`);
+        execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=lambda x: "SA_ADV|"+x.__class__.__name__)`);
+        // execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=str)`);
     } else {
 
         // Experimental optimizations
@@ -197,6 +198,19 @@ async function getRenpyVars() {
     }
 }
 
+async function getSingleVariable(keyChain) {
+    let out = await RenpyExec(`
+base = renpy.python.store_dicts["store"]
+j_dat = base64.b64decode("${btoa(JSON.stringify(keyChain))}").decode("utf-8")
+for part in json.loads(j_dat):
+    if hasattr(base, "__getitem__"):
+        base = base[part]
+    else:
+        base = getattr(base, part)
+result = base`);
+    return out;
+}
+
 async function getRenpyLabels() {
     if (execMethod === ExecMethods.RENPY_EXEC) {
         return await RenpyGet("list(renpy.get_all_labels())");
@@ -209,9 +223,29 @@ async function getRenpyLabels() {
     }
 }
 
+async function getPyObjDetails(path) {
+    const pathParts = path.split(".");
+    const headName = pathParts.shift();
+    const bodyIndexChain = pathParts.length ? "." + pathParts.join(".") : "";
+
+    // let childrenValues = await RenpyGet(
+    //     `{k: getattr(renpy.python.store_dicts["store"]["${headName}"]${bodyIndexChain}, k) ` +
+    //     `for k in dir(renpy.python.store_dicts["store"]["${headName}"]${bodyIndexChain}) ` +
+    //     `if not (k.startswith("__") and k.endswith("__"))}`
+    // );
+    let childrenKeys = await RenpyGet(
+        `[k for k in dir(renpy.python.store_dicts["store"]["${headName}"]${bodyIndexChain}) ` +
+        `if not (k.startswith("__") and k.endswith("__"))]`
+    );
+
+    return {
+        children: childrenKeys
+    };
+}
+
 export async function initRenPyWeb() {
     log("Initializing Ren'PyWeb backend...");
-    execMethod = RenpyExec ?  ExecMethods.RENPY_EXEC : ExecMethods.PYRUN_SIMPLESTRING;
+    execMethod = RenpyExec ? ExecMethods.RENPY_EXEC : ExecMethods.PYRUN_SIMPLESTRING;
     log(`Found execmethod ${execMethod}`);
 
     const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
@@ -402,9 +436,13 @@ for label in renpy.exports.get_all_labels():
     varSearchBar.addEventListener("keypress", noProp);
 
     await varEditorInit(
-        setVariable,
-        getRenpyVars,
-        logVariableChange,
+        {
+            setVariable: setVariable,
+            getVariables: getRenpyVars,
+            getSingleVariable: getSingleVariable,
+            logVariableChange: logVariableChange,
+            getPythonObjectDetails: getPyObjDetails
+        },
         { bar: varSearchBar, container: varContainer },
         500
     );

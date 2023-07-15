@@ -1,14 +1,20 @@
 let cachedChanges = {};
 let lockedVariables = {};
-let monitoringInterval;
 let renderedVariables = [];
 let searchElements = {};
+let monitoringInterval;
 
 function $e() { }
 function $el() { }
-function setVariable() { }
-function getVariables() { }
-function logVariableChange() { }
+
+let srcCallbacks = {
+    setVariable: undefined,
+    getVariables: undefined,
+    logVariableChange: undefined,
+    getPythonObjectDetails: undefined,
+    getSingleVariable: undefined,
+};
+
 function log(...args) {
     console.log("[SA @ VariableEditor]", ...args);
 }
@@ -23,9 +29,7 @@ function recursivelyMakeChildrenVisible(varPath) {
 }
 
 export async function varEditorInit(
-    setVar,
-    getVars,
-    logVarChange,
+    sourceCallbacks,
     _searchElements,
     varCheckInterval
 ) {
@@ -34,9 +38,9 @@ export async function varEditorInit(
     $e = v.$e;
     $el = v.$el;
 
-    setVariable = setVar;
-    getVariables = getVars;
-    logVariableChange = logVarChange;
+    for (const key in srcCallbacks) {
+        srcCallbacks[key] = sourceCallbacks[key];
+    }
     searchElements = _searchElements;
 
     searchElements.bar.addEventListener("input", function () {
@@ -84,12 +88,12 @@ export async function varEditorInit(
         }
     });
 
-    let i = 0;
-    for (const [key, value] of Object.entries(getVariables())) {
-        renderVariable(key, value, searchElements.container, i);
-        renderedVariables.push(key);
-        i++;
-    }
+    // let i = 0;
+    // for (const [key, value] of Object.entries(await srcCallbacks.getVariables())) {
+    //     renderVariable(key, value, searchElements.container, i);
+    //     renderedVariables.push(key);
+    //     i++;
+    // }
 
     monitoringInterval = setInterval(variableChangeWatchdog, varCheckInterval);
 }
@@ -116,7 +120,7 @@ function findVariableChanges(variables) {
 
         console.log("LUP");
         console.log("LOCKEDUPDATE", varPath, lockValue);
-        setVariable(varPath.split("."), lockValue);
+        srcCallbacks.setVariable(varPath.split("."), lockValue);
         after[varPath] = lockValue;
     }
 
@@ -179,7 +183,7 @@ function cast(value, type) {
     throw Error(type);
 }
 
-export function renderVariable(
+export async function renderVariable(
     key,
     value,
     parent,
@@ -200,10 +204,34 @@ export function renderVariable(
 
     container.style.backgroundColor = getRecursionCSSColor(recursionLevel, index);
 
+    let type = "?";
+    let pyObjData;
+    if (
+        typeof value === "string"
+        && srcCallbacks.getPythonObjectDetails
+        && value.startsWith("SA_ADV|")
+    ) {
+        const pyClass = value.split("|", 2)[1];
+        if ([
+            "builtin_function_or_method",
+            "instancemethod"
+        ].includes(pyClass)) {
+            // For methods or randomly dangling functions
+            type = "function";
+        } else {
+            // Advanced
+            pyObjData = await srcCallbacks.getPythonObjectDetails(varPath);
+            pyObjData.class = pyClass;
+        }
+    }
+
     if (value === undefined) value = null;
 
-    let type = "?";
-    if (value === null) {
+    if (type !== "?") {
+        // pass
+    } else if (pyObjData) {
+        type = "pyobject";
+    } else if (value === null) {
         type = "null";
     } else if (typeof value === "boolean") {
         type = "boolean";
@@ -225,6 +253,8 @@ export function renderVariable(
             string: "s",
             array: "a",
             object: "o",
+            pyobject: "c",
+            function: "f",
         }[type] || "?";
 
     let leftSide = $e("div", container);
@@ -246,6 +276,10 @@ export function renderVariable(
         valueAppearance = ">";
     } else if (type === "object") {
         valueAppearance = "}";
+    } else if (type === "pyobject") {
+        valueAppearance = "~";
+    } else if (type === "function") {
+        valueAppearance = "f()";
     }
 
     const rightBit = $e("div", container, { classes: ["sa-var-right"] });
@@ -254,9 +288,10 @@ export function renderVariable(
         classes: ["sa-var-value", typeClass],
     });
 
-    const hasChildren = ["object", "array"].includes(type);
+    const hasChildren = ["object", "array", "pyobject"].includes(type);
+    const valueEditable = !["?", "function"].includes(type);
 
-    if (!hasChildren) {
+    if (!hasChildren && valueEditable) {
         let lockButton = $e("span", rightBit, {
             innerText: " -",
             classes: ["sa-var-lock"],
@@ -273,17 +308,10 @@ export function renderVariable(
                 delete lockedVariables[varPath];
             }
         });
-    }
 
-    if (!hasChildren && type !== "?") {
+
         let knownWorking = value;
-
-        // Ren'Py: Don't allow editing of advanced Python objects (yet)
-        if (value === "<advanced>") {
-            valueLabel.classList.add("sa-note");
-        } else {
-            valueLabel.setAttribute("contenteditable", "true");
-        }
+        valueLabel.setAttribute("contenteditable", "true");
 
         // Ren'Py: Don't let <html> gobble up our events
         valueLabel.addEventListener("keypress", function (event) {
@@ -297,12 +325,9 @@ export function renderVariable(
         });
 
         valueLabel.addEventListener("blur", function (event) {
-            // Ren'Py: Don't set advanced objects to strings lol
-            if (valueLabel.innerText === "<advanced>") return;
-
             try {
                 let value = cast(valueLabel.innerText, type);
-                setVariable(familyTree, value);
+                srcCallbacks.setVariable(familyTree, value);
                 knownWorking = value;
             } catch (err) {
                 console.log(err);
@@ -325,18 +350,35 @@ export function renderVariable(
             "style.borderColor": "blue",
         });
         let i = 0;
-        for (const [key, item] of Object.entries(value)) {
-            let cont = renderVariable(
-                key,
-                item,
-                childContainer,
-                i,
-                familyTree,
-                recursionLevel + 1,
-                dimChildKey
-            );
-            cont.style.paddingLeft = `${recursionLevel + 1 * 12}px`;
-            i++;
+        if (!pyObjData) {
+            for (const [key, item] of Object.entries(value)) {
+                let cont = await renderVariable(
+                    key,
+                    item,
+                    childContainer,
+                    i,
+                    familyTree,
+                    recursionLevel + 1,
+                    dimChildKey
+                );
+                cont.style.paddingLeft = `${recursionLevel + 1 * 12}px`;
+                i++;
+            }
+        } else {
+            for (const key of pyObjData.children) {
+                const item = await srcCallbacks.getSingleVariable([...familyTree, key]);
+                let cont = await renderVariable(
+                    key,
+                    item,
+                    childContainer,
+                    i,
+                    familyTree,
+                    recursionLevel + 1,
+                    dimChildKey
+                );
+                cont.style.paddingLeft = `${recursionLevel + 1 * 12}px`;
+                i++;
+            }
         }
 
         if (!childContainer.children.length) {
@@ -361,8 +403,12 @@ export function renderVariable(
 }
 
 /* Change Log */
+let watchdogLocked = false;
 async function variableChangeWatchdog() {
-    let variables = await getVariables();
+    if (watchdogLocked) return;
+    watchdogLocked = true;
+
+    let variables = await srcCallbacks.getVariables();
 
     // Render new variables
     let i = renderedVariables.length - 1;
@@ -370,7 +416,7 @@ async function variableChangeWatchdog() {
         if (renderedVariables.includes(key)) continue;
 
         log(`Found new variable '${key}'`);
-        renderVariable(key, value, searchElements.container, i);
+        await renderVariable(key, value, searchElements.container, i);
         renderedVariables.push(key);
         i++;
     }
@@ -394,6 +440,8 @@ async function variableChangeWatchdog() {
 
         // Log change
         // console.log(k, " => ", v)
-        logVariableChange(k, v);
+        srcCallbacks.logVariableChange(k, v);
     }
+
+    watchdogLocked = false;
 }

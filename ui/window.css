@@ -344,6 +344,20 @@
     color: orange;
 }
 
+.sa-type-pyobject {
+    color: rgb(98, 195, 87);
+}
+
+.sa-type-function {
+    color: rgb(145, 80, 210);
+}
+
+.sa-var-value.sa-type-function,
+.sa-type-function~.sa-var-name {
+    opacity: 0.7;
+    font-style: italic;
+}
+
 .sa-type-unk {
     color: rgb(189, 99, 148);
 }

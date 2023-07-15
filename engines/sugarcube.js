@@ -102,9 +102,11 @@ export async function initSugarCube() {
     const varSearchBar = $e("input", tabs.vars.content);
 
     await varEditorInit(
-        setVariable,
-        getVariables,
-        logVariableChange,
+        {
+            setVariable: setVariable,
+            getVariables: getVariables,
+            logVariableChange: logVariableChange
+        },
         { bar: varSearchBar, container: varContainer },
         250
     );
@@ -429,7 +431,7 @@ exportFunction(PATCH_TRUE, window, { defineAs: "SA_PATCH_TRUE" });
 function getPassages() {
     if (SugarCube.version.major === 1) return SugarCube.tale.passages;
 
-    if(SugarCube.Story.passages !== undefined) return SugarCube.Story.passages;
+    if (SugarCube.Story.passages !== undefined) return SugarCube.Story.passages;
 
     return SugarCube.Story.getAllRegular();
     // let ret = {};
