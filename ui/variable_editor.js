@@ -7,6 +7,8 @@ let monitoringInterval;
 function $e() { }
 function $el() { }
 
+const varPathToElTable = {};
+
 let srcCallbacks = {
     setVariable: undefined,
     getVariables: undefined,
@@ -19,12 +21,15 @@ function log(...args) {
     console.log("[SA @ VariableEditor]", ...args);
 }
 
+function varPathToEl(path) {
+    // Cache for speeeeed
+    return varPathToElTable[path];
+}
+
 function recursivelyMakeChildrenVisible(varPath) {
-    for (const varContainer of document.getElementsByClassName("sa-var-container")) {
-        const targetVarPath = varContainer.getAttribute("var-path");
-        if (!targetVarPath) continue;
-        if (!targetVarPath.startsWith(varPath + ".")) continue;
-        varContainer.classList.remove("sa-hidden");
+    for (const [path, container] of Object.entries(varPathToElTable)) {
+        if (!path.startsWith(varPath + ".")) continue;
+        container.classList.remove("sa-hidden");
     }
 }
 
@@ -55,12 +60,10 @@ export async function varEditorInit(
                 continue;
             }
 
-            const nameEl = varContainer.querySelector(".sa-var-name");
-            if (!nameEl) continue;
-            const name = processForSearch(nameEl.innerText);
+            const name = processForSearch(varContainer.saVarKey);
 
             const value = processForSearch(
-                varContainer.querySelector(".sa-var-value").innerText
+                varContainer.saVarValue.toString(),
             );
 
             const matching = name.includes(query) || value.includes(query);
@@ -75,7 +78,7 @@ export async function varEditorInit(
 
                 for (const pathBit of varPath.split(".")) {
                     pathBits.push(pathBit);
-                    let elVar = $el(`[var-path="${pathBits.join('.')}"]`);
+                    let elVar = varPathToEl(pathBits.join('.'));
                     elVar.classList.remove("sa-hidden");
                 }
             } else {
@@ -199,6 +202,12 @@ export async function renderVariable(
         classes: ["sa-var-container"],
         "var-path": varPath,
     });
+
+    // Cache these here for speedup
+    container.saVarKey = key;
+    container.saVarValue = value;
+    
+    varPathToElTable[varPath] = container;
 
     if (recursionLevel === 0) container.classList.add("sa-toplevel-var");
 
@@ -424,7 +433,7 @@ async function variableChangeWatchdog() {
     let changes = findVariableChanges(variables);
     for (const [k, v] of Object.entries(changes)) {
         // Update existing variable visually
-        let rowEl = $el(`[var-path="${k}"]`);
+        let rowEl = varPathToEl(k);
         // TODO: What's up with this?
         if (!rowEl) continue;
         let el = rowEl.querySelector(".sa-var-value");
