@@ -60,6 +60,11 @@ export async function varEditorInit(
                 continue;
             }
 
+            if (!varContainer.saVarKey) {
+                varContainer.classList.add("sa-hidden");
+                continue;
+            }
+
             const name = processForSearch(varContainer.saVarKey);
 
             const value = processForSearch(
@@ -102,6 +107,7 @@ export async function varEditorInit(
 }
 
 function processForSearch(string) {
+    if (!string) return "";
     string = string.toLowerCase();
     // string = string.replaceAll(/\s/g, ""); // Slow? :b
     string = string.replaceAll(" ", "");
@@ -197,6 +203,12 @@ export async function renderVariable(
 ) {
     familyTree = [...(familyTree || []), key];
     let varPath = familyTree.join(".");
+
+    if (!key) {
+        console.warn("No key!");
+        return;
+    }
+
 
     let container = $e("div", parent, {
         classes: ["sa-var-container"],
@@ -370,6 +382,7 @@ export async function renderVariable(
                     recursionLevel + 1,
                     dimChildKey
                 );
+                if (!cont) return;
                 cont.style.paddingLeft = `${recursionLevel + 1 * 12}px`;
                 i++;
             }
