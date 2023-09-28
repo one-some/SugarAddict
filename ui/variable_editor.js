@@ -60,10 +60,14 @@ export async function varEditorInit(
                 continue;
             }
 
-            if (!varContainer.saVarKey) {
+            if (
+                !varContainer.saVarKey
+                || !varContainer.saVarValue
+            ) {
                 varContainer.classList.add("sa-hidden");
                 continue;
             }
+
 
             const name = processForSearch(varContainer.saVarKey);
 

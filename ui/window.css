@@ -159,9 +159,13 @@
 }
 
 .sa-var-value {
-    max-height: calc(line-height);
     text-overflow: ellipsis;
     overflow: hidden;
+}
+
+.sa-var-right {
+    max-height: 1em;
+    overflow-x: hidden;
 }
 
 .sa-var-type {
