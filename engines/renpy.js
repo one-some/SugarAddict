@@ -1,6 +1,6 @@
 const Module = window.wrappedJSObject.Module;
-const RenpyExec = window.wrappedJSObject.renpy_exec;
-const RenpyGet = window.wrappedJSObject.renpy_get;
+let RenpyExec = window.wrappedJSObject.renpy_exec;
+let RenpyGet = window.wrappedJSObject.renpy_get;
 
 let history = [];
 let historyPointer = 0;
@@ -86,18 +86,9 @@ exportFunction(
 
 // Run in Python VM
 function execRawPy(code) {
-    if (execMethod === ExecMethods.RENPY_EXEC) {
-        // newer versions of renpy expose this for FREE!!! (thank you Teyut!!!!)
-        // also very new versions(?) don't support pyrunsimplestring directly
-        setTimeout(async function () {
-            await RenpyExec(code);
-        }, 0);
-    } else {
-        // console.info("[SA @ _PyRun_SimpleString]", ret);
-        let pointer = string2stack(code);
-        let ret = Module._PyRun_SimpleString(pointer);
-        // Ret is -1 for error, 0 for success
-    }
+    setTimeout(async function () {
+        await RenpyExec(code);
+    }, 0);
 }
 
 function execPy(code) {
@@ -132,76 +123,39 @@ function string2stack(string) {
 
 function initPythonVM() {
     // Be careful; no f-strings here. Engine may be running on python2.
-    if (execMethod === ExecMethods.RENPY_EXEC) {
-        // Patch json to not error when trying to process advanced stuff
-        execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=lambda x: "SA_ADV|"+x.__class__.__name__)`);
-        // execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=str)`);
-    } else {
-
-        // Experimental optimizations
+    if (execMethod === ExecMethods.PYRUN_SIMPLESTRING) {
         execRawPy("import json");
         execRawPy("import renpy");
-
-        execRawPy(`renpy.pri_store = renpy.python.store_dicts["store"]`);
-
-        execRawPy(`
-def SA_EXPORT(val):
-    import json
-    print("SA_EXP|" + json.dumps(val, default=lambda x: "<advanced>"))
-renpy.exports.SA_EXPORT = SA_EXPORT`);
-        execRawPy(`renpy.exports.notify("SugarAddict Injected :-)")`);
+        execRawPy("renpy.get_all_labels = renpy.exports.get_all_labels");
     }
+
+    // Patch json to not error when trying to process advanced stuff
+    execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=lambda x: "SA_ADV|"+x.__class__.__name__)`);
 
     execRawPy(`print("""[SugarAddict] RenPy VM hijack success, have fun!
 [SugarAddict] renpy.python.store_dicts["store"] is bound to renpy.pri_store for conveinence. Or... just use the variable editor.
 [SugarAddict] Some renpy methods and variables you may be familiar with might be located in 'renpy.exports' instead of 'renpy'.
 -----
 """)`);
-    /*
-      execRawPy(`import renpy
-  renpy.config.gc_thresholds = (10000, 10, 10)
-  renpy.config.image_cache_size_mb = 100
-  `);
-  */
-    // Default is (25000, 10, 10)
-}
-
-function execRawExpectOutput(code) {
-    return new Promise(function (resolve, reject) {
-        const listener = function (out) {
-            if (!out.startsWith("SA_EXP|")) {
-                return;
-            }
-
-            out = out.replace("SA_EXP|", "");
-
-            // Remove self from listeners, we're done
-            outputListeners = outputListeners.filter(function (l) {
-                return l !== listener;
-            });
-
-            resolve(out);
-        };
-
-        outputListeners.push(listener);
-        execRawPy(code);
-    });
 }
 
 async function getRenpyVars() {
-    if (execMethod === ExecMethods.RENPY_EXEC) {
-        return await RenpyGet("{k: renpy.python.store_dicts['store'][k] for k in renpy.python.store_dicts['store'].ever_been_changed if k in renpy.python.store_dicts['store']}");
-    } else {
-        //let out = await execRawExpectOutput(`renpy.exports.SA_EXPORT({k: renpy.pri_store[k] for k in renpy.pri_store.ever_been_changed if k in renpy.pri_store})`);
-        //return JSON.parse(out);
-        return [];
-    }
+    return await RenpyGet("{k: renpy.python.store_dicts['store'][k] for k in renpy.python.store_dicts['store'].ever_been_changed if k in renpy.python.store_dicts['store']}");
 }
 
 async function getSingleVariable(keyChain) {
+    let nChain = [];
+    for (const k of keyChain) {
+        if (isNaN(k)) {
+            nChain.push(k);
+        } else {
+            nChain.push(Number(k));
+        }
+    }
+
     let out = await RenpyExec(`
 base = renpy.python.store_dicts["store"]
-j_dat = base64.b64decode("${btoa(JSON.stringify(keyChain))}").decode("utf-8")
+j_dat = base64.b64decode("${btoa(JSON.stringify(nChain))}").decode("utf-8")
 for part in json.loads(j_dat):
     if hasattr(base, "__getitem__"):
         base = base[part]
@@ -212,21 +166,26 @@ result = base`);
 }
 
 async function getRenpyLabels() {
-    if (execMethod === ExecMethods.RENPY_EXEC) {
-        return await RenpyGet("list(renpy.get_all_labels())");
-    } else {
-        return JSON.parse(
-            await execRawExpectOutput(
-                "renpy.exports.SA_EXPORT(list(renpy.exports.get_all_labels()))"
-            )
-        );
-    }
+    return await RenpyGet("list(renpy.get_all_labels())");
 }
 
 async function getPyObjDetails(path) {
     const pathParts = path.split(".");
     const headName = pathParts.shift();
-    const bodyIndexChain = pathParts.length ? "." + pathParts.join(".") : "";
+    log("PATH", path);
+    let bodyIndexChain = "";
+    if (pathParts.length) {
+        for (const part of pathParts) {
+            // Starts with alphanumeric
+            if (part[0].match(/[a-z]/i)) {
+                bodyIndexChain += "." + part;
+            } else {
+                bodyIndexChain += `[${part}]`;
+            }
+        }
+    }
+    // const bodyIndexChain = pathParts.length ? "." + pathParts.join(".") : "";
+    log(bodyIndexChain);
 
     // let childrenValues = await RenpyGet(
     //     `{k: getattr(renpy.python.store_dicts["store"]["${headName}"]${bodyIndexChain}, k) ` +
@@ -243,10 +202,119 @@ async function getPyObjDetails(path) {
     };
 }
 
+function bootstrapExec() {
+    // Copyright 2022 Teyut <teyut@free.fr>, MIT License.
+    let cmd_queue = [];
+    let cur_cmd = undefined;
+
+    /** This functions is called by the wrapper script at the end of script execution. */
+    function cmd_callback(result) {
+        // console.log("out", result);
+
+        if (cur_cmd === undefined) {
+            console.error('Unexpected command result', result);
+            return;
+        }
+
+        try {
+            if (result.error !== undefined) {
+                const e = new Error(result.error);
+
+                // Red!
+                for (const listener of errorListeners) {
+                    listener(result.error);
+                }
+
+                e.name = result.name;
+                e.traceback = result.traceback;
+                cur_cmd.reject(e);
+            } else {
+                cur_cmd.resolve(result.data);
+            }
+        } finally {
+            cur_cmd = undefined;
+            send_next_cmd();
+        }
+    }
+
+    /** Prepare and send the next command to be executed if any. */
+    function send_next_cmd() {
+        if (cmd_queue.length == 0) return;
+
+        cur_cmd = cmd_queue.shift();
+
+        // Convert script to base64 to prevent having to escape
+        // the script content as a Python string
+        const script_b64 = btoa(cur_cmd.py_script);
+        const wrapper = 'import base64, emscripten, json, traceback;\n'
+            + 'try:'
+            + "result = None;"
+            + "exec(base64.b64decode('" + script_b64 + "').decode('utf-8'));"
+            + "result = json.dumps(dict(data=result));"
+            + "\n"
+            + "except Exception as e:"
+            + "result = json.dumps(dict(error=str(e), name=e.__class__.__name__, traceback=traceback.format_exc()));"
+            + "\n"
+            + "emscripten.run_script('_renpy_cmd_callback(%s)' % (result,));";
+
+
+        let pointer = string2stack(wrapper);
+        let ret = Module._PyRun_SimpleString(pointer);
+    }
+
+    /** Add a command to the queue and execute it if the queue was empty. */
+    function add_cmd(py_script, resolve, reject) {
+        const cmd = { py_script: py_script, resolve: resolve, reject: reject };
+        cmd_queue.push(cmd);
+
+        if (cur_cmd === undefined) send_next_cmd();
+    }
+
+    RenpyExec = function (py_script) {
+        // console.log("RUN", py_script);
+        return new Promise((resolve, reject) => {
+            add_cmd(py_script, resolve, reject);
+        });
+    };
+
+    RenpyGet = function (name) {
+        return new Promise((resolve, reject) => {
+            RenpyExec('result = ' + name)
+                .then(resolve).catch(reject);
+        });
+    };
+
+    // Unused for now
+    let renpy_set = function (name, value, raw) {
+        let script;
+        if (raw) {
+            script = name + " = " + value + "; result = True";
+        } else {
+            // Using base64 as it is unclear if we can use the output
+            // of JSON.stringify() directly as a Python string
+            script = 'import base64, json; '
+                + name + " = json.loads(base64.b64decode('"
+                + btoa(JSON.stringify(value))
+                + "').decode('utf-8')); result = True";
+        }
+        return new Promise((resolve, reject) => {
+            RenpyExec(script)
+                .then(resolve).catch(reject);
+        });
+    };
+
+    exportFunction(cmd_callback, window, { defineAs: "_renpy_cmd_callback" });
+}
+
 export async function initRenPyWeb() {
     log("Initializing Ren'PyWeb backend...");
     execMethod = RenpyExec ? ExecMethods.RENPY_EXEC : ExecMethods.PYRUN_SIMPLESTRING;
     log(`Found execmethod ${execMethod}`);
+
+    if (execMethod === ExecMethods.PYRUN_SIMPLESTRING) {
+        log("PYRUN_SIMPLESTRING: Bootstrapping exec functions");
+        bootstrapExec();
+    }
 
     const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
 
@@ -265,15 +333,15 @@ export async function initRenPyWeb() {
     if (execMethod === ExecMethods.RENPY_EXEC) {
         $e("span", tabs.home.content, {
             innerText:
-                "Exec Method: renpy_exec\nNewer RenPy version; Old injection method won't work. Possible instability lies ahead.",
+                "Exec Method: renpy_exec\nNewer RenPy version; using native exec hooks.",
             classes: ["sa-header"],
-            "style.color": "gold",
+            "style.color": "green",
         });
     } else if (execMethod === ExecMethods.PYRUN_SIMPLESTRING) {
         $e("span", tabs.home.content, {
-            innerText: "Exec Method: PyRun_SimpleString",
+            innerText: "Exec Method: PyRun_SimpleString. Older RenPy version; sketchy exec hax",
             classes: ["sa-header"],
-            "style.color": "green",
+            "style.color": "gold",
         });
     } else {
         alert("What");
@@ -407,12 +475,7 @@ for label in renpy.exports.get_all_labels():
         // TODO: Support numbered index for list (this casts it to string like a dict)
         let indexChain = keyChain.map((key) => `["${key}"]`).join();
 
-        if (execMethod === ExecMethods.RENPY_EXEC) {
-            // b64 idea stolen from renpy bootloader shell thing
-            execRawPy(`renpy.python.store_dicts["store"]${indexChain} = json.loads(base64.b64decode("${btoa(enc)}").decode("utf-8"))`);
-        } else {
-            execRawPy(`renpy.pri_store${indexChain} = json.loads("${enc}")`);
-        }
+        execRawPy(`renpy.python.store_dicts["store"]${indexChain} = json.loads(base64.b64decode("${btoa(enc)}").decode("utf-8"))`);
     }
 
     function logVariableChange(k, v) {
