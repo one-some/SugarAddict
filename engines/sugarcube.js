@@ -246,7 +246,13 @@ export async function initSugarCube() {
 
     deepPassageSearchButton.addEventListener("click", function () {
         // Deep search
-        const query = processForSearch(deepPassageSearchbar.value);
+        let query = processForSearch(deepPassageSearchbar.value);
+        
+        const isRegex = query[0] === "/" && query[query.length - 1] === "/";
+        if (isRegex) {
+            query = new RegExp(query.slice(1, -1), "is");
+            console.log(query);
+        }
 
         // Clear old results
         deepPassageContainer.innerHTML = "";
@@ -254,10 +260,28 @@ export async function initSugarCube() {
         for (const passage of Object.values(getPassages())) {
             // Match either title or contents
             if (
-                !processForSearch(passage.title).includes(query)
-                && !processForSearch(passage.element.innerText).includes(query)
-            ) continue;
-            renderPassageListing(passage.title, deepPassageContainer);
+                !isRegex &&
+                (
+                    processForSearch(passage.title).includes(query)
+                    || processForSearch(passage.element.innerText).includes(query)
+                )
+            ) {
+                renderPassageListing(passage.title, deepPassageContainer);
+                continue;
+            }
+
+            // Regex too
+
+            if (
+                isRegex &&
+                (
+                    query.test(processForSearch(passage.title))
+                    || query.test(processForSearch(passage.element.innerText))
+                )
+            ) {
+                renderPassageListing(passage.title, deepPassageContainer);
+                continue;
+            }
         }
     });
 
