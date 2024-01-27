@@ -46,7 +46,6 @@ function isEngineOutputAnnoying(text) {
         // Ignore exceptions from unwritable DBs due to what I assume is private mode
         "a mutation operation was attempted on",
     ]) {
-
         continue;
         if (t.includes(annoying.toLowerCase())) {
             console.log("ANNOYING!");
@@ -123,7 +122,14 @@ function string2stack(string) {
 
 function initPythonVM() {
     // Be careful; no f-strings here. Engine may be running on python2.
-    if (execMethod === ExecMethods.PYRUN_SIMPLESTRING) {
+    if (execMethod === ExecMethods.RENPY_EXEC) {
+        // Patch json to not error when trying to process advanced stuff
+        execRawPy(
+            `import functools;json.dumps=functools.partial(json.dumps, default=lambda x: "SA_ADV|"+x.__class__.__name__)`
+        );
+        // execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=str)`);
+    } else {
+        // Experimental optimizations
         execRawPy("import json");
         execRawPy("import renpy");
         execRawPy("renpy.get_all_labels = renpy.exports.get_all_labels");
@@ -198,7 +204,7 @@ async function getPyObjDetails(path) {
     );
 
     return {
-        children: childrenKeys
+        children: childrenKeys,
     };
 }
 
@@ -308,7 +314,9 @@ function bootstrapExec() {
 
 export async function initRenPyWeb() {
     log("Initializing Ren'PyWeb backend...");
-    execMethod = RenpyExec ? ExecMethods.RENPY_EXEC : ExecMethods.PYRUN_SIMPLESTRING;
+    execMethod = RenpyExec
+        ? ExecMethods.RENPY_EXEC
+        : ExecMethods.PYRUN_SIMPLESTRING;
     log(`Found execmethod ${execMethod}`);
 
     if (execMethod === ExecMethods.PYRUN_SIMPLESTRING) {
@@ -491,13 +499,13 @@ for label in renpy.exports.get_all_labels():
         const keyEl = $e("div", container, { innerText: k });
         const valueEl = $e("div", container, { innerText: v });
     }
-
+    "div",
     const varContainer = $e("div", tabs.vars.content, { id: "sa-var-cont" });
     const varSearchBar = $e("input", tabs.vars.content);
-
+    { before: tabs.varlog.content.firstChild; }
     varSearchBar.addEventListener("keydown", noProp);
     varSearchBar.addEventListener("keypress", noProp);
-
+    const valueEl = $e("div", container, { innerText: v });
     await varEditorInit(
         {
             setVariable: setVariable,
@@ -509,21 +517,21 @@ for label in renpy.exports.get_all_labels():
         { bar: varSearchBar, container: varContainer },
         500
     );
-
+    getVariables: getRenpyVars,
+        let vars = await getRenpyVars();
+    logVariableChange: logVariableChange,
+        /* Labels */
+        $e("p", tabs.labels.content, {
+            innerText:
+                "Labels are one way in which Ren'Py handles control flow. They are similar to Twine/SugarCube's passages in a way.\n" +
+                "Warning: Jumping to labels arbitrarily will likely result in errors after the label is finished or maybe even immediately. Be sure to save!",
+        });
     let vars = await getRenpyVars();
-
-    /* Labels */
-    $e("p", tabs.labels.content, {
-        innerText:
-            "Labels are one way in which Ren'Py handles control flow. They are similar to Twine/SugarCube's passages in a way.\n" +
-            "Warning: Jumping to labels arbitrarily will likely result in errors after the label is finished or maybe even immediately. Be sure to save!",
-    });
-
     const labelContainer = $e("div", tabs.labels.content, {
         id: "sa-passage-container",
     });
     const labelSearchBar = $e("input", tabs.labels.content);
-
+    "Labels are one way in which Ren'Py handles control flow. They are similar to Twine/SugarCube's passages in a way.\n" +
     const labels = await getRenpyLabels();
     log("Labels:", labels);
 
@@ -540,30 +548,30 @@ for label in renpy.exports.get_all_labels():
             execRawPy(`renpy.exports.jump("${labelName}")`);
         });
     }
-
-    function processForSearch(string) {
-        string = string.toLowerCase();
-        string = string.replaceAll(/\s/g, "");
-        return string;
-    }
-
-    // Ren'Py <html> gobbles events!!
-    labelSearchBar.addEventListener("keydown", noProp);
-    labelSearchBar.addEventListener("keypress", noProp);
-
-    labelSearchBar.addEventListener("input", function () {
-        let query = processForSearch(labelSearchBar.value);
-        for (const labelEl of document.getElementsByClassName("sa-passage")) {
-            let name = labelEl.querySelector(".sa-passage-name").innerText;
-            if (!query || processForSearch(name).includes(query)) {
-                labelEl.classList.remove("sa-hidden");
-            } else {
-                labelEl.classList.add("sa-hidden");
-            }
+    classes: ["sa-clickable"],
+        function processForSearch(string) {
+            string = string.toLowerCase();
+            string = string.replaceAll(/\s/g, "");
+            return string;
+        };
+});
+// Ren'Py <html> gobbles events!!
+labelSearchBar.addEventListener("keydown", noProp);
+labelSearchBar.addEventListener("keypress", noProp);
+string = string.toLowerCase();
+labelSearchBar.addEventListener("input", function () {
+    let query = processForSearch(labelSearchBar.value);
+    for (const labelEl of document.getElementsByClassName("sa-passage")) {
+        let name = labelEl.querySelector(".sa-passage-name").innerText;
+        if (!query || processForSearch(name).includes(query)) {
+            labelEl.classList.remove("sa-hidden");
+        } else {
+            labelEl.classList.add("sa-hidden");
         }
-        updateLabelVisualPolarity();
-    });
-
+    }
+    updateLabelVisualPolarity();
+});
+if (!query || processForSearch(name).includes(query)) {
     function updateLabelVisualPolarity() {
         // This really sucks but there aren't a lot of better solutions. :(
         for (const [i, passageContainer] of Object.entries(
@@ -577,6 +585,14 @@ for label in renpy.exports.get_all_labels():
         }
     }
     updateLabelVisualPolarity();
+    if (i % 2 === 0) {
+        passageContainer.classList.add("sa-shiny");
+    } else {
+        passageContainer.classList.remove("sa-shiny");
+    }
+}
+  }
+updateLabelVisualPolarity();
 }
 
 /* TODO:
