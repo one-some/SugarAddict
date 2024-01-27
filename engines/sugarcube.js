@@ -21,24 +21,12 @@ if (SugarCube.version.major === 1) {
     };
 }
 
-// HACK: Global util
-let util;
-let $e = () => null;
-let $el = () => null;
-
 /* Init */
 export async function initSugarCube() {
     console.log("[SA @ SugarCube] Initializing SugarCube backend...");
     console.info(SugarCube);
 
-    // HACK: Global util
-    util = await import(browser.runtime.getURL("ui/util.js"));
-    $e = util.$e;
-    $el = util.$el;
-
     const TwineParser = await import(browser.runtime.getURL("twine_parser.js"));
-
-    const { makeWindow } = await import(browser.runtime.getURL("ui/window.js"));
 
     const tabs = await makeWindow({
         home: { title: "Home", icon: "🏠" },
@@ -62,10 +50,6 @@ export async function initSugarCube() {
             ifId: SugarCube.Story.ifId,
         };
     }
-
-    const { renderVariable, varEditorInit } = await import(
-        browser.runtime.getURL("ui/variable_editor.js")
-    );
 
     function setVariable(path, value) {
         let ref = SugarCube.State.active.variables;
