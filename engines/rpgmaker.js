@@ -1,13 +1,18 @@
-const $gamePlayer = window.wrappedJSObject.$gamePlayer;
-const $gameParty = window.wrappedJSObject.$gameParty;
-const $gameActors = window.wrappedJSObject.$gameActors;
-const $gameTroop = window.wrappedJSObject.$gameTroop;
-const $gameTemp = window.wrappedJSObject.$gameTemp;
-const $gameMap = window.wrappedJSObject.$gameMap;
-const $gameVariables = window.wrappedJSObject.$gameVariables;
+//for (const id of Object.keys(wJS.$gameMap._events)) {
+//  if (!wJS.$gameMap._events[id]) continue;
+//  const event = wJS.$gameMap.event(id);
+//  console.log(`${id} ${event.event().name}`)
+//}
+//wJS.$gameMap.event(36).start()
+// DECOMPILE
+// ION BLAST
+// for (const i in wJS.$gameSwitches._data) {
+// if (wJS.$gameSwitches._data[i] === null) wJS.$gameSwitches.setValue(i, true);
+// }
+// wJS.$dataSystem.variables WTF
+// https://pastebin.com/JyRTdq0b goldmine
 
-const $dataItems = window.wrappedJSObject.$dataItems;
-const $dataCommonEvents = window.wrappedJSObject.$dataCommonEvents;
+const wJS = window.wrappedJSObject;
 
 function log(...args) {
     console.log("[SA @ RPGMaker]", ...args);
@@ -133,28 +138,28 @@ export async function initRPGMaker() {
         classes: ["sa-nav-button"],
     });
 
-    downButton.addEventListener("click", () => $gamePlayer._y++);
-    upButton.addEventListener("click", () => $gamePlayer._y--);
-    rightButton.addEventListener("click", () => $gamePlayer._x++);
-    leftButton.addEventListener("click", () => $gamePlayer._x--);
+    downButton.addEventListener("click", () => wJS.$gamePlayer._y++);
+    upButton.addEventListener("click", () => wJS.$gamePlayer._y--);
+    rightButton.addEventListener("click", () => wJS.$gamePlayer._x++);
+    leftButton.addEventListener("click", () => wJS.$gamePlayer._x--);
 
     // Walkspeed
     makeSettingColumn(
         "Walkspeed",
-        () => $gamePlayer._moveSpeed,
+        () => wJS.$gamePlayer._moveSpeed,
         "floatslider",
         tabs.player.content,
-        (speed) => ($gamePlayer._moveSpeed = speed),
+        (speed) => (wJS.$gamePlayer._moveSpeed = speed),
         { min: 0, max: 6, step: 0.01 }
     );
 
     // Money
     makeSettingColumn(
         "Money",
-        () => $gameParty._gold,
+        () => wJS.$gameParty._gold,
         "inttext",
         tabs.player.content,
-        (money) => ($gameParty._gold = money)
+        (money) => (wJS.$gameParty._gold = money)
     );
 
     $e("span", tabs.player.content, {
@@ -167,8 +172,8 @@ export async function initRPGMaker() {
     });
     recoverButton.addEventListener("click", function () {
         // TODO: Probably is a better way to do this
-        const playerActorId = $gameParty._actors[0];
-        $gameActors.actor(playerActorId).recoverAll();
+        const playerActorId = wJS.$gameParty._actors[0];
+        wJS.$gameActors.actor(playerActorId).recoverAll();
     });
 
     /* Party */
@@ -181,8 +186,8 @@ export async function initRPGMaker() {
         classes: ["sa-nav-button"],
     });
     partyRecoverButton.addEventListener("click", function () {
-        for (const actorId of $gameParty._actors) {
-            $gameActors.actor(actorId).recoverAll();
+        for (const actorId of wJS.$gameParty._actors) {
+            wJS.$gameActors.actor(actorId).recoverAll();
         }
     });
 
@@ -191,12 +196,12 @@ export async function initRPGMaker() {
         classes: ["sa-nav-button"],
     });
     enemyKillButton.addEventListener("click", function () {
-        for (const enemy of $gameTroop._enemies) {
+        for (const enemy of wJS.$gameTroop._enemies) {
             enemy.die();
         }
     });
 
-    for (const member of $gameParty.allMembers()) {
+    for (const member of wJS.$gameParty.allMembers()) {
         const outerMemberCont = $e("div", tabs.party.content);
         // Name
         $e("div", outerMemberCont, {
@@ -279,9 +284,9 @@ export async function initRPGMaker() {
     let selectedItem = null;
 
     countInput.addEventListener("change", function (event) {
-        // let oldVal = $gameParty._items[selectedItem.id] ?? 0;
+        // let oldVal = wJS.$gameParty._items[selectedItem.id] ?? 0;
         let newVal = parseInt(countInput.value);
-        if (newVal) $gameParty._items[selectedItem.id] = newVal;
+        if (newVal) wJS.$gameParty._items[selectedItem.id] = newVal;
     });
 
     function updateSelectedItem(item) {
@@ -292,7 +297,7 @@ export async function initRPGMaker() {
             $e("div", itemDetails, { innerText: item.description });
         if (item.price)
             $e("div", itemDetails, { innerText: `Price: ${item.price}` });
-        countInput.value = $gameParty._items[item.id] ?? 0;
+        countInput.value = wJS.$gameParty._items[item.id] ?? 0;
     }
 
     function drawItem(item) {
@@ -303,7 +308,7 @@ export async function initRPGMaker() {
         return listEntry;
     }
 
-    for (const item of $dataItems) {
+    for (const item of wJS.$dataItems) {
         if (!item) continue;
         drawItem(item);
     }
@@ -313,7 +318,7 @@ export async function initRPGMaker() {
         classes: ["sa-rpgm-event-list"],
     });
 
-    for (const event of $dataCommonEvents) {
+    for (const event of wJS.$dataCommonEvents) {
         if (!event) continue;
 
         const row = $e("div", eventList, { classes: ["sa-spread"] });
@@ -325,8 +330,8 @@ export async function initRPGMaker() {
         });
         startButton.addEventListener("click", function () {
             console.log(event);
-            $gameTemp._commonEventId = event.id;
-            $gameMap._interpreter.setupReservedCommonEvent();
+            wJS.$gameTemp._commonEventId = event.id;
+            wJS.$gameMap._interpreter.setupReservedCommonEvent();
         });
     }
 
@@ -339,7 +344,7 @@ export async function initRPGMaker() {
     function setVariable(varID, value) {
         varID = parseInt(varID);
         console.log(varID, value);
-        $gameVariables.setValue(varID, value);
+        wJS.$gameVariables.setValue(varID, value);
     }
 
     function logVariableChange(k, v) {
@@ -363,7 +368,12 @@ export async function initRPGMaker() {
     const varSearchBar = $e("input", tabs.vars.content);
 
     function getVariables() {
-        return $gameVariables._data;
+        let out = {};
+
+        for (let i=0; i < wJS.$dataSystem.variables.length; i++) {
+            out[wJS.$dataSystem.variables[i]] = wJS.$gameVariables._data[i];
+        }
+        return out;
     }
     console.log(getVariables());
 
