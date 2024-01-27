@@ -64,7 +64,7 @@
 }
 
 .sa-resize-handle {
-    position: absolute;
+    position: absolutvisual-e;
     /* Debug */
     /* background-color: red; */
     height: 25px;
@@ -324,45 +324,46 @@
 }
 
 /* Type colors */
-.sa-type-null {
+[sa-type=null] .sa-typed {
     color: rgb(194, 68, 194);
 }
 
-.sa-type-boolean {
+[sa-type=boolean] .sa-typed {
     color: rgb(211, 67, 91);
 }
 
-.sa-type-number {
+[sa-type=number] .sa-typed {
     color: lightgreen;
 }
 
-.sa-type-string {
+[sa-type=string] .sa-typed {
     color: salmon;
 }
 
-.sa-type-array {
+[sa-type=array] .sa-typed {
     color: yellow;
 }
 
-.sa-type-object {
+[sa-type=object] .sa-typed {
     color: orange;
 }
 
-.sa-type-pyobject {
+[sa-type=pyobject] .sa-typed {
     color: rgb(98, 195, 87);
 }
 
-.sa-type-function {
+[sa-type=function] .sa-typed {
     color: rgb(145, 80, 210);
 }
 
-.sa-var-value.sa-type-function,
-.sa-type-function~.sa-var-name {
+/* .sa-var-value.sa-type-function,
+.sa-type-function~.sa-var-name { */
+[sa-type=function] .sa-function {
     opacity: 0.7;
     font-style: italic;
 }
 
-.sa-type-unk {
+[sa-type=function] .sa-unk {
     color: rgb(189, 99, 148);
 }
 

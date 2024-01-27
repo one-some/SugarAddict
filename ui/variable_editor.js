@@ -178,6 +178,90 @@ function getRecursionCSSColor(recursionLevel, index) {
     return `rgb(${[v, v, v].join(",")})`;
 }
 
+async function getVarData(value) {
+    let type = "unk";
+
+    let pyObjData;
+    if (
+        typeof value === "string"
+        && srcCallbacks.getPythonObjectDetails
+        && value.startsWith("SA_ADV|")
+    ) {
+        const pyClass = value.split("|", 2)[1];
+        if ([
+            "builtin_function_or_method",
+            "instancemethod"
+        ].includes(pyClass)) {
+            // For methods or randomly dangling functions
+            type = "function";
+        } else {
+            // Advanced
+            pyObjData = await srcCallbacks.getPythonObjectDetails(varPath);
+            pyObjData.class = pyClass;
+        }
+    }
+
+    if (type !== "unk") {
+        // pass
+    } else if (pyObjData) {
+        type = "pyobject";
+    } else if (value === null) {
+        type = "null";
+    } else if (typeof value === "boolean") {
+        type = "boolean";
+    } else if (typeof value === "number") {
+        type = "number";
+    } else if (typeof value === "string") {
+        type = "string";
+    } else if (Array.isArray(value)) {
+        type = "array";
+    } else if (typeof value === "object") {
+        type = "object";
+    }
+
+    return [pyObjData, type];
+}
+
+function getVisualType(type) {
+    return {
+        null: "0",
+        boolean: "b",
+        number: "#",
+        string: "s",
+        array: "a",
+        object: "o",
+        pyobject: "c",
+        function: "f",
+    }[type] || "?";
+}
+
+function getValueAppearance(value, type) {
+    return {
+        array: ">",
+        object: "}",
+        pyobject: "~",
+        function: "f()",
+    }[type] || value;
+}
+
+async function retypeElement(el, value) {
+    let [pyObjData, type] = await getVarData(value);
+
+    if (type === el.getAttribute("sa-type")) {
+        console.log("LOL IGNORE!");
+        return;
+    }
+    console.log("Something interesting....", el);
+
+    let visualType = getVisualType(type);
+    let valueAppearance = getValueAppearance(value, type);
+
+    el.setAttribute("sa-type", type);
+
+    el.querySelector(".sa-type-label").innerText = `[${visualType}]`;
+    el.querySelector(".sa-value").innerText = valueAppearance;
+}
+
 function cast(value, type) {
     if (type === "null") return value; // ¯\_(ツ)_/¯
     if (type === "string") return value.toString();
@@ -229,65 +313,18 @@ export async function renderVariable(
 
     container.style.backgroundColor = getRecursionCSSColor(recursionLevel, index);
 
-    let type = "?";
-    let pyObjData;
-    if (
-        typeof value === "string"
-        && srcCallbacks.getPythonObjectDetails
-        && value.startsWith("SA_ADV|")
-    ) {
-        const pyClass = value.split("|", 2)[1];
-        if ([
-            "builtin_function_or_method",
-            "instancemethod"
-        ].includes(pyClass)) {
-            // For methods or randomly dangling functions
-            type = "function";
-        } else {
-            // Advanced
-            pyObjData = await srcCallbacks.getPythonObjectDetails(varPath);
-            pyObjData.class = pyClass;
-        }
-    }
-
     if (value === undefined) value = null;
-
-    if (type !== "?") {
-        // pass
-    } else if (pyObjData) {
-        type = "pyobject";
-    } else if (value === null) {
-        type = "null";
-    } else if (typeof value === "boolean") {
-        type = "boolean";
-    } else if (typeof value === "number") {
-        type = "number";
-    } else if (typeof value === "string") {
-        type = "string";
-    } else if (Array.isArray(value)) {
-        type = "array";
-    } else if (typeof value === "object") {
-        type = "object";
-    }
-
-    let visualType =
-        {
-            null: "0",
-            boolean: "b",
-            number: "#",
-            string: "s",
-            array: "a",
-            object: "o",
-            pyobject: "c",
-            function: "f",
-        }[type] || "?";
+    let [pyObjData, type] = await getVarData(value);
+    let visualType = getVisualType(type);
 
     let leftSide = $e("div", container);
-    let typeClass = `sa-type-${type === "?" ? "unk" : type}`;
+    container.setAttribute("sa-type", type);
+
+    //let typeClass = `sa-type-${type === "?" ? "unk" : type}`;
 
     let typeLabel = $e("span", leftSide, {
         innerText: `[${visualType}]`,
-        classes: ["sa-var-type", typeClass],
+        classes: ["sa-typed", "sa-type-label"]//, typeClass],
     });
 
     let keyLabel = $e("span", leftSide, {
@@ -296,21 +333,12 @@ export async function renderVariable(
     });
     if (dimKey) keyLabel.style.opacity = "0.4";
 
-    let valueAppearance = value;
-    if (type === "array") {
-        valueAppearance = ">";
-    } else if (type === "object") {
-        valueAppearance = "}";
-    } else if (type === "pyobject") {
-        valueAppearance = "~";
-    } else if (type === "function") {
-        valueAppearance = "f()";
-    }
+    let valueAppearance = getValueAppearance(value, type);
 
     const rightBit = $e("div", container, { classes: ["sa-var-right"] });
     const valueLabel = $e("span", rightBit, {
         innerText: valueAppearance,
-        classes: ["sa-var-value", typeClass],
+        classes: ["sa-typed", "sa-value"],
     });
 
     const hasChildren = ["object", "array", "pyobject"].includes(type);
@@ -351,7 +379,7 @@ export async function renderVariable(
 
         valueLabel.addEventListener("blur", function (event) {
             try {
-                let value = cast(valueLabel.innerText, type);
+                let value = cast(valueLabel.innerText, container.getAttribute("sa-type"));
                 srcCallbacks.setVariable(familyTree, value);
                 knownWorking = value;
             } catch (err) {
@@ -441,7 +469,7 @@ async function variableChangeWatchdog() {
     for (const [key, value] of Object.entries(variables)) {
         if (renderedVariables.includes(key)) continue;
 
-        log(`Found new variable '${key}'`);
+        // log(`Found new variable '${key}'`);
         await renderVariable(key, value, searchElements.container, i);
         renderedVariables.push(key);
         i++;
@@ -453,6 +481,9 @@ async function variableChangeWatchdog() {
         let rowEl = varPathToEl(k);
         // TODO: What's up with this?
         if (!rowEl) continue;
+
+        await retypeElement(rowEl, v);
+
         let el = rowEl.querySelector(".sa-var-value");
         if (el) el.innerText = v;
         if (rowEl) {
