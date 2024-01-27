@@ -23,6 +23,9 @@
         "file://*/*"
       ],
       "js": [
+        "ui/util.js",
+        "ui/window.js",
+        "ui/variable_editor.js",
         "main.js"
       ]
     }

@@ -33,16 +33,11 @@ function recursivelyMakeChildrenVisible(varPath) {
     }
 }
 
-export async function varEditorInit(
+async function varEditorInit(
     sourceCallbacks,
     _searchElements,
     varCheckInterval
 ) {
-    // kinda yucky
-    const v = await import(browser.runtime.getURL("ui/util.js"));
-    $e = v.$e;
-    $el = v.$el;
-
     for (const key in srcCallbacks) {
         srcCallbacks[key] = sourceCallbacks[key];
     }
@@ -280,7 +275,7 @@ function cast(value, type) {
     throw Error(type);
 }
 
-export async function renderVariable(
+async function renderVariable(
     key,
     value,
     parent,

@@ -22,13 +22,11 @@ document.addEventListener("keydown", function (event) {
     }
 });
 
-export async function makeWindow(tabs) {
+async function makeWindow(tabs) {
     // Remove old elements and styles
     for (const el of document.querySelectorAll(".sa-toplevel")) {
         el.remove();
     }
-
-    const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
 
     const style = $e("link", document.head, {
         rel: "stylesheet",
@@ -40,6 +38,8 @@ export async function makeWindow(tabs) {
         id: "sa-window-container",
         classes: ["sa-toplevel"],
     });
+
+    console.log("EEE", $e("div"), "OK")
 
     function dontPropagate(event) {
         event.stopPropagation();

@@ -12,6 +12,9 @@
 // wJS.$dataSystem.variables WTF
 // https://pastebin.com/JyRTdq0b goldmine
 
+console.log("HELLO")
+console.log($e);
+
 const wJS = window.wrappedJSObject;
 
 function log(...args) {
@@ -31,10 +34,32 @@ function registerIntInput(element, onChange) {
     });
 }
 
+function updateEvents(eventList) {
+    eventList.innerHTML = "";
+
+    //for (const event of wJS.$dataCommonEvents) {
+    for (const [id, v] in Object.entries(wJS.$gameMap._events)) {
+        if (!v) continue;
+
+        const event = wJS.$gameMap.event(id);
+        const row = $e("div", eventList, { classes: ["sa-spread"] });
+        $e("span", row, { innerText: event.event().name });
+
+        const startButton = $e("span", row, {
+            innerText: "[Jump]",
+            classes: ["sa-link"],
+        });
+        startButton.addEventListener("click", function () {
+            console.log(event);
+            event.start();
+            //wJS.$gameTemp._commonEventId = event.id;
+            //wJS.$gameMap._interpreter.setupReservedCommonEvent();
+        });
+    }
+}
+
 export async function initRPGMaker() {
     log("Initializing RPGMaker backend...");
-
-    const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
 
     function makeSettingColumn(
         label,
@@ -92,7 +117,6 @@ export async function initRPGMaker() {
         }
     }
 
-    const { makeWindow } = await import(browser.runtime.getURL("ui/window.js"));
     const tabs = await makeWindow({
         // "home": { title: "Home", icon: "🏠" },
         player: { title: "Player", icon: "👤" },
@@ -318,22 +342,10 @@ export async function initRPGMaker() {
         classes: ["sa-rpgm-event-list"],
     });
 
-    for (const event of wJS.$dataCommonEvents) {
-        if (!event) continue;
+    setInterval(function() {
+        updateEvents(eventList);
+    }, 4000);
 
-        const row = $e("div", eventList, { classes: ["sa-spread"] });
-        $e("span", row, { innerText: event.name });
-
-        const startButton = $e("span", row, {
-            innerText: "[Jump]",
-            classes: ["sa-link"],
-        });
-        startButton.addEventListener("click", function () {
-            console.log(event);
-            wJS.$gameTemp._commonEventId = event.id;
-            wJS.$gameMap._interpreter.setupReservedCommonEvent();
-        });
-    }
 
     // Variables
 

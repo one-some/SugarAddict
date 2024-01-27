@@ -1,4 +1,4 @@
-export function $e(tag, parent, attributes, insertionLocation = null) {
+function $e(tag, parent, attributes, insertionLocation = null) {
     let element = document.createElement(tag);
 
     if (!attributes) attributes = {};
@@ -50,6 +50,6 @@ export function $e(tag, parent, attributes, insertionLocation = null) {
     return element;
 }
 
-export function $el(selector) {
+function $el(selector) {
     return document.querySelector(selector);
 }

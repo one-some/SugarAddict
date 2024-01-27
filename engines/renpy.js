@@ -546,7 +546,7 @@ for label in renpy.exports.get_all_labels():
             execRawPy(`renpy.exports.jump("${labelName}")`);
         });
     }
-});
+}
 
 function processForSearch(string) {
     string = string.toLowerCase();
@@ -568,7 +568,7 @@ labelSearchBar.addEventListener("input", function () {
             labelEl.classList.add("sa-hidden");
         }
         updateLabelVisualPolarity();
-    });
+    }
 
     function updateLabelVisualPolarity() {
         // This really sucks but there aren't a lot of better solutions. :(
@@ -582,16 +582,14 @@ labelSearchBar.addEventListener("input", function () {
             }
         }
     }
-    updateLabelVisualPolarity();
+
     if (i % 2 === 0) {
         passageContainer.classList.add("sa-shiny");
     } else {
         passageContainer.classList.remove("sa-shiny");
     }
-}
-  }
-updateLabelVisualPolarity();
-}
+    updateLabelVisualPolarity();
+});
 
 /* TODO:
  *         enableSkipping:  function() {
