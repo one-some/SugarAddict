@@ -258,7 +258,7 @@ async function retypeElement(el, value) {
 
     el.setAttribute("sa-type", type);
 
-    el.querySelector(".sa-type-label").innerText = `[${visualType}]`;
+    el.querySelector(".sa-type-label").innerText = `[${visualType}] `;
     el.querySelector(".sa-value").innerText = valueAppearance;
 }
 

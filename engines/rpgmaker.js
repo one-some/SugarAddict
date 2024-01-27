@@ -373,6 +373,11 @@ export async function initRPGMaker() {
         for (let i=0; i < wJS.$dataSystem.variables.length; i++) {
             out[wJS.$dataSystem.variables[i]] = wJS.$gameVariables._data[i];
         }
+
+        // TODO: Own tab?
+        for (let i=0; i < wJS.$dataSystem.switches.length; i++) {
+            out["[s] " + wJS.$dataSystem.switches[i]] = wJS.$gameSwitches._data[i];
+        }
         return out;
     }
     console.log(getVariables());
