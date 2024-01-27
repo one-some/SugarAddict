@@ -499,13 +499,12 @@ for label in renpy.exports.get_all_labels():
         const keyEl = $e("div", container, { innerText: k });
         const valueEl = $e("div", container, { innerText: v });
     }
-    "div",
+
     const varContainer = $e("div", tabs.vars.content, { id: "sa-var-cont" });
     const varSearchBar = $e("input", tabs.vars.content);
-    { before: tabs.varlog.content.firstChild; }
     varSearchBar.addEventListener("keydown", noProp);
     varSearchBar.addEventListener("keypress", noProp);
-    const valueEl = $e("div", container, { innerText: v });
+
     await varEditorInit(
         {
             setVariable: setVariable,
@@ -517,21 +516,20 @@ for label in renpy.exports.get_all_labels():
         { bar: varSearchBar, container: varContainer },
         500
     );
-    getVariables: getRenpyVars,
-        let vars = await getRenpyVars();
-    logVariableChange: logVariableChange,
-        /* Labels */
-        $e("p", tabs.labels.content, {
-            innerText:
-                "Labels are one way in which Ren'Py handles control flow. They are similar to Twine/SugarCube's passages in a way.\n" +
-                "Warning: Jumping to labels arbitrarily will likely result in errors after the label is finished or maybe even immediately. Be sure to save!",
-        });
+
     let vars = await getRenpyVars();
+
+    /* Labels */
+    $e("p", tabs.labels.content, {
+        innerText:
+            "Labels are one way in which Ren'Py handles control flow. They are similar to Twine/SugarCube's passages in a way.\n" +
+            "Warning: Jumping to labels arbitrarily will likely result in errors after the label is finished or maybe even immediately. Be sure to save!",
+    });
+
     const labelContainer = $e("div", tabs.labels.content, {
         id: "sa-passage-container",
     });
     const labelSearchBar = $e("input", tabs.labels.content);
-    "Labels are one way in which Ren'Py handles control flow. They are similar to Twine/SugarCube's passages in a way.\n" +
     const labels = await getRenpyLabels();
     log("Labels:", labels);
 
@@ -548,17 +546,18 @@ for label in renpy.exports.get_all_labels():
             execRawPy(`renpy.exports.jump("${labelName}")`);
         });
     }
-    classes: ["sa-clickable"],
-        function processForSearch(string) {
-            string = string.toLowerCase();
-            string = string.replaceAll(/\s/g, "");
-            return string;
-        };
 });
+
+function processForSearch(string) {
+    string = string.toLowerCase();
+    string = string.replaceAll(/\s/g, "");
+    return string;
+}
+
 // Ren'Py <html> gobbles events!!
 labelSearchBar.addEventListener("keydown", noProp);
 labelSearchBar.addEventListener("keypress", noProp);
-string = string.toLowerCase();
+
 labelSearchBar.addEventListener("input", function () {
     let query = processForSearch(labelSearchBar.value);
     for (const labelEl of document.getElementsByClassName("sa-passage")) {
@@ -568,10 +567,9 @@ labelSearchBar.addEventListener("input", function () {
         } else {
             labelEl.classList.add("sa-hidden");
         }
-    }
-    updateLabelVisualPolarity();
-});
-if (!query || processForSearch(name).includes(query)) {
+        updateLabelVisualPolarity();
+    });
+
     function updateLabelVisualPolarity() {
         // This really sucks but there aren't a lot of better solutions. :(
         for (const [i, passageContainer] of Object.entries(
