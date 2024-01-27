@@ -12,9 +12,6 @@
 // wJS.$dataSystem.variables WTF
 // https://pastebin.com/JyRTdq0b goldmine
 
-console.log("HELLO")
-console.log($e);
-
 const wJS = window.wrappedJSObject;
 
 function log(...args) {
@@ -38,20 +35,18 @@ function updateEvents(eventList) {
     eventList.innerHTML = "";
 
     //for (const event of wJS.$dataCommonEvents) {
-    for (const [id, v] in Object.entries(wJS.$gameMap._events)) {
-        if (!v) continue;
-
-        const event = wJS.$gameMap.event(id);
+    for (const mapEvent of wJS.$gameMap.events()) {
+        //const event = wJS.$gameMap.event(id);
         const row = $e("div", eventList, { classes: ["sa-spread"] });
-        $e("span", row, { innerText: event.event().name });
+        $e("span", row, { innerText: mapEvent.event().name });
 
         const startButton = $e("span", row, {
             innerText: "[Jump]",
             classes: ["sa-link"],
         });
         startButton.addEventListener("click", function () {
-            console.log(event);
-            event.start();
+            console.log(mapEvent);
+            mapEvent.start();
             //wJS.$gameTemp._commonEventId = event.id;
             //wJS.$gameMap._interpreter.setupReservedCommonEvent();
         });
@@ -348,10 +343,6 @@ export async function initRPGMaker() {
 
 
     // Variables
-
-    const { renderVariable, varEditorInit } = await import(
-        browser.runtime.getURL("ui/variable_editor.js")
-    );
 
     function setVariable(varID, value) {
         varID = parseInt(varID);

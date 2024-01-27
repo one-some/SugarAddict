@@ -39,8 +39,6 @@ async function makeWindow(tabs) {
         classes: ["sa-toplevel"],
     });
 
-    console.log("EEE", $e("div"), "OK")
-
     function dontPropagate(event) {
         event.stopPropagation();
     }

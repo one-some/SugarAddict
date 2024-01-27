@@ -4,9 +4,6 @@ let renderedVariables = [];
 let searchElements = {};
 let monitoringInterval;
 
-function $e() { }
-function $el() { }
-
 const varPathToElTable = {};
 
 let srcCallbacks = {
