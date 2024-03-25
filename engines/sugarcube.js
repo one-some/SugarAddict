@@ -12,7 +12,7 @@ if (SugarCube.version.major === 1) {
     SugarCube.State = SugarCube.state;
     const SCInfo = {
         title: SugarCube.tale._title,
-        ifId: document.querySelector("tw-storydata").getAttribute("ifid"),
+        ifId: document.querySelector("tw-storydata")?.getAttribute("ifid"),
     };
 } else {
     const SCInfo = {
@@ -38,18 +38,6 @@ export async function initSugarCube() {
     });
 
     /* Twine Variables */
-
-    if (SugarCube.version.major === 1) {
-        SCInfo = {
-            title: SugarCube.tale._title,
-            ifId: $el("tw-storydata").getAttribute("ifid"),
-        };
-    } else {
-        SCInfo = {
-            title: SugarCube.Story.title,
-            ifId: SugarCube.Story.ifId,
-        };
-    }
 
     function setVariable(path, value) {
         let ref = SugarCube.State.active.variables;

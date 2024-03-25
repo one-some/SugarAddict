@@ -176,6 +176,7 @@ async function getRenpyLabels() {
 }
 
 async function getPyObjDetails(path) {
+    return {children: []};
     const pathParts = path.split(".");
     const headName = pathParts.shift();
     log("PATH", path);
@@ -324,9 +325,6 @@ export async function initRenPyWeb() {
         bootstrapExec();
     }
 
-    const { $e, $el } = await import(browser.runtime.getURL("ui/util.js"));
-
-    const { makeWindow } = await import(browser.runtime.getURL("ui/window.js"));
     const tabs = await makeWindow({
         home: { title: "Home", icon: "🏠" },
         vars: { title: "Variables", icon: "🔧" },
@@ -472,10 +470,6 @@ for label in renpy.exports.get_all_labels():
 
     /* Variables */
 
-    const { varEditorInit } = await import(
-        browser.runtime.getURL("ui/variable_editor.js")
-    );
-
     function setVariable(keyChain, v) {
         log("Setting", keyChain, v);
         let enc = JSON.stringify(v);
@@ -546,6 +540,43 @@ for label in renpy.exports.get_all_labels():
             execRawPy(`renpy.exports.jump("${labelName}")`);
         });
     }
+
+    // Ren'Py <html> gobbles events!!
+    labelSearchBar.addEventListener("keydown", noProp);
+    labelSearchBar.addEventListener("keypress", noProp);
+
+    labelSearchBar.addEventListener("input", function () {
+        let query = processForSearch(labelSearchBar.value);
+        for (const labelEl of document.getElementsByClassName("sa-passage")) {
+            let name = labelEl.querySelector(".sa-passage-name").innerText;
+            if (!query || processForSearch(name).includes(query)) {
+                labelEl.classList.remove("sa-hidden");
+            } else {
+                labelEl.classList.add("sa-hidden");
+            }
+            updateLabelVisualPolarity();
+        }
+
+        function updateLabelVisualPolarity() {
+            // This really sucks but there aren't a lot of better solutions. :(
+            for (const [i, passageContainer] of Object.entries(
+                document.querySelectorAll(".sa-passage:not(.sa-hidden)")
+            )) {
+                if (i % 2 === 0) {
+                    passageContainer.classList.add("sa-shiny");
+                } else {
+                    passageContainer.classList.remove("sa-shiny");
+                }
+            }
+        }
+
+        if (i % 2 === 0) {
+            passageContainer.classList.add("sa-shiny");
+        } else {
+            passageContainer.classList.remove("sa-shiny");
+        }
+        updateLabelVisualPolarity();
+    });
 }
 
 function processForSearch(string) {
@@ -554,42 +585,6 @@ function processForSearch(string) {
     return string;
 }
 
-// Ren'Py <html> gobbles events!!
-labelSearchBar.addEventListener("keydown", noProp);
-labelSearchBar.addEventListener("keypress", noProp);
-
-labelSearchBar.addEventListener("input", function () {
-    let query = processForSearch(labelSearchBar.value);
-    for (const labelEl of document.getElementsByClassName("sa-passage")) {
-        let name = labelEl.querySelector(".sa-passage-name").innerText;
-        if (!query || processForSearch(name).includes(query)) {
-            labelEl.classList.remove("sa-hidden");
-        } else {
-            labelEl.classList.add("sa-hidden");
-        }
-        updateLabelVisualPolarity();
-    }
-
-    function updateLabelVisualPolarity() {
-        // This really sucks but there aren't a lot of better solutions. :(
-        for (const [i, passageContainer] of Object.entries(
-            document.querySelectorAll(".sa-passage:not(.sa-hidden)")
-        )) {
-            if (i % 2 === 0) {
-                passageContainer.classList.add("sa-shiny");
-            } else {
-                passageContainer.classList.remove("sa-shiny");
-            }
-        }
-    }
-
-    if (i % 2 === 0) {
-        passageContainer.classList.add("sa-shiny");
-    } else {
-        passageContainer.classList.remove("sa-shiny");
-    }
-    updateLabelVisualPolarity();
-});
 
 /* TODO:
  *         enableSkipping:  function() {

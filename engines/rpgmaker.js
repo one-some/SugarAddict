@@ -11,8 +11,10 @@
 // }
 // wJS.$dataSystem.variables WTF
 // https://pastebin.com/JyRTdq0b goldmine
+// $dataMap.events[2]
 
 const wJS = window.wrappedJSObject;
+const mapCache = [];
 
 function log(...args) {
     console.log("[SA @ RPGMaker]", ...args);
@@ -394,6 +396,8 @@ export async function initRPGMaker() {
         { bar: varSearchBar, container: varContainer },
         250
     );
+
+    buildMapCache();
 }
 
 function decompileEvent(event) {
@@ -402,5 +406,52 @@ function decompileEvent(event) {
     // https://pastebin.com/eJx0EvXB
     for (const inst of event.list) {
         console.log(inst);
+    }
+}
+
+async function buildMapCache() {
+    const url = new URL(wJS.location);
+    url.search = "";
+    url.pathname = url.pathname.split("/").slice(0, -1).join("/");
+    const base = url.toString();
+
+    for (const v of wJS.$dataMapInfos) {
+        if (!v) continue;
+
+        console.log("...", v.name);
+        const r = await fetch(`${base}/data/Map${String(v.id).padStart(3, "0")}.json`);
+        mapCache.push(await r.json());
+    }
+
+    console.log("Done!");
+    console.log(mapCache);
+    patternScanCodeInput();
+}
+
+function patternScanCodeInput() {
+    const CODE_INPUT_NUMBER = 103;
+    const CODE_CONDITIONAL_BRANCH = 111;
+
+    // yes its bad
+    // really bad
+
+    for (const map of mapCache) {
+        for (const event of map.events) {
+            if (!event) continue;
+
+            let lastCode = null;
+            for (const page of event.pages) {
+                for (const command of page.list) {
+
+                    if (lastCode === CODE_INPUT_NUMBER && command.code === CODE_CONDITIONAL_BRANCH) {
+                        console.log("Hmmm! @", event.name);
+                        console.log(command);
+                        console.log("Probably want", command.parameters[3]);
+
+                    }
+                    lastCode = command.code;
+                }
+            }
+        }
     }
 }

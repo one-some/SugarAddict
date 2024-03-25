@@ -170,7 +170,7 @@ function getRecursionCSSColor(recursionLevel, index) {
     return `rgb(${[v, v, v].join(",")})`;
 }
 
-async function getVarData(value) {
+async function getVarData(value, varPath) {
     let type = "unk";
 
     let pyObjData;
@@ -237,7 +237,8 @@ function getValueAppearance(value, type) {
 }
 
 async function retypeElement(el, value) {
-    let [pyObjData, type] = await getVarData(value);
+    const varPath = el.getAttribute("var-path");
+    let [pyObjData, type] = await getVarData(value, varPath);
 
     if (type === el.getAttribute("sa-type")) {
         console.log("LOL IGNORE!");
@@ -306,7 +307,7 @@ async function renderVariable(
     container.style.backgroundColor = getRecursionCSSColor(recursionLevel, index);
 
     if (value === undefined) value = null;
-    let [pyObjData, type] = await getVarData(value);
+    let [pyObjData, type] = await getVarData(value, varPath);
     let visualType = getVisualType(type);
 
     let leftSide = $e("div", container);
