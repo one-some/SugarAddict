@@ -1,33 +1,31 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "SugarAddict",
   "version": "0.2",
   "description": "Story game manipulation tool",
   "icons": {
     "48": "logo.png"
   },
-  "browser_action": {
+  "action": {
     "default_icon": {
       "48": "logo.png"
     }
   },
   "background": {
-    "scripts": [
-      "background.js"
-    ]
+    "service_worker": "background.js",
+    "type": "module"
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "*://*/*",
-        "file://*/*"
-      ],
-      "js": [
-        "ui/util.js",
-        "ui/window.js",
-        "ui/variable_editor.js",
+  "host_permissions": ["*://*/"],
+  "permissions": [
+      "scripting"
+  ],
+  "minimum_chrome_version": "93",
+  "web_accessible_resources": [{
+    "matches": ["<all_urls>"],
+    "resources": [
+        "./engines/*",
+        "/ui/*",
         "main.js"
-      ]
-    }
-  ]
+    ]
+  }]
 }
