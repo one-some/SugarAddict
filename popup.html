@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="popup.css">
+    </head>
+    <body>
+        <titlebar>
+            <left>
+                <span>SugarAddict</span>
+                <span id="engine">RPGMaker</span>
+                <span id="game-name">Huh :)</span>
+            </left>
+            <right>
+                <span id="inject-status">Injected</span>
+            </right>
+        </titlebar>
+        <content class="engine-rpgmaker">
+            <tabs>
+                <tab class="selected">Misc</tab>
+                <tab>Party</tab>
+                <tab>Items</tab>
+                <tab>Variables</tab>
+                <tab>Map</tab>
+                <tab>Decomp</tab>
+            </tabs>
+            <tab-content>
+                <setting>
+                    <!-- $dataSystem.currencyUnit -->
+                    <s-label>Currency</s-label>
+                    <input id="rpgm-currency" type="number"/>
+                </setting>
+                <setting>
+                    <!-- $gamePlayer.setThrough(bool) -->
+                    <s-label>Noclip</s-label>
+                    <toggle-button id="rpgm-noclip">Disabled</toggle-button>
+                </setting>
+                <setting>
+                    <!-- $gameSystem.disableEncounter()
+ -->
+                    <s-label>Encounters</s-label>
+                    <toggle-button id="rpgm-encounters" class="on">Enabled</toggle-button>
+                </setting>
+                <setting>
+                    <!-- $gamePlayer.setMoveSpeed(10.0) -->
+                    <s-label>Speed</s-label>
+                    <slider>
+                        <i-label>2.10</i-label>
+                        <input id="rpgm-speed" type="range"/>
+                    </slider>
+                </setting>
+            </tab-content>
+        </content>
+        <script src="popup.js"></script>
+        <script type="module" src="engines/rpgmaker.js"></script>
+    </body>
+</html>

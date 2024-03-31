@@ -9,7 +9,8 @@
   "action": {
     "default_icon": {
       "48": "logo.png"
-    }
+    },
+   "default_popup": "popup.html"
   },
   "background": {
     "service_worker": "background.js",
@@ -23,8 +24,6 @@
   "web_accessible_resources": [{
     "matches": ["<all_urls>"],
     "resources": [
-        "./engines/*",
-        "/ui/*",
         "main.js"
     ]
   }]
