@@ -1,20 +1,40 @@
 // https://kinoar.github.io/rmmv-doc-web/globals.html
 import { log, error } from "../log.js";
 import * as Exec from "../exec-util.js";
-
-function $el(x) { return document.querySelector(x); }
+import { $e, $el } from "../ui/util.js";
 
 const currencyInput = $el("#rpgm-currency");
 const gameNameLabel = $el("#game-name");
 const noclipButton = $el("#rpgm-noclip");
 const encountersButton = $el("#rpgm-encounters");
 const speedInput = $el("#rpgm-speed");
+const itemList = $el("item-list");
 
-async function update() {
+async function init() {
     const gameName = await Exec.pageExec(() => $dataSystem.gameTitle);
     gameNameLabel.innerText = gameName;
     gameNameLabel.title = gameName;
 
+
+    let filledItem = false;
+    const items = await Exec.pageExec(() => $dataItems);
+    for (const item of items) {
+        if (!item) continue;
+        const el = $e("item", itemList, {innerText: item.name});
+        el.addEventListener("click", function() {
+            $el("item-info name").innerText = item.name;
+            $el("item-info desc").innerText = item.description;
+            $el("item-info price").innerText = item.price;
+        });
+
+        if (!filledItem) {
+            el.click();
+            filledItem = true;
+        }
+    }
+}
+
+async function update() {
     currencyInput.value = await Exec.pageExec(() => $gameParty.gold());
     noclipButton.setToggled(await Exec.pageExec(() => $gamePlayer.isThrough()));
     encountersButton.setToggled(await Exec.pageExec(() => $gameSystem.isEncounterEnabled()));
@@ -54,5 +74,6 @@ speedInput.addEventListener("input", async function() {
 
     log("RPGMaker good!");
 
+    init();
     update();
 })();

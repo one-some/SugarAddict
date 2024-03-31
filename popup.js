@@ -36,3 +36,23 @@ for (const button of document.querySelectorAll("toggle-button")) {
         if (enabled !== toggled) button.click();
     }
 }
+
+for (const [i, tab] of Object.entries(document.querySelectorAll("tab"))) {
+    console.log(tab);
+    tab.addEventListener("click", function() {
+        for (const tabEl of document.querySelectorAll("tab")) {
+            tabEl.classList.toggle("selected", tabEl === tab);
+        }
+
+        const tabName = tab.getAttribute("tab");
+        for (const contentEl of document.querySelectorAll("tab-content")) {
+            contentEl.classList.toggle(
+                "selected",
+                contentEl.getAttribute("tab") === tabName
+            );
+        }
+    });
+
+    // Bah, humbug!
+    if (tab.hasAttribute("default")) tab.click();
+}

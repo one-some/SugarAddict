@@ -16,14 +16,14 @@
         </titlebar>
         <content class="engine-rpgmaker">
             <tabs>
-                <tab class="selected">Misc</tab>
-                <tab>Party</tab>
-                <tab>Items</tab>
-                <tab>Variables</tab>
-                <tab>Map</tab>
-                <tab>Decomp</tab>
+                <tab tab="misc">Misc</tab>
+                <tab tab="party">Party</tab>
+                <tab tab="items" default>Items</tab>
+                <tab tab="variables">Variables</tab>
+                <tab tab="map">Map</tab>
+                <tab tab="decomp">Decomp</tab>
             </tabs>
-            <tab-content>
+            <tab-content tab="misc">
                 <setting>
                     <!-- $dataSystem.currencyUnit -->
                     <s-label>Currency</s-label>
@@ -48,6 +48,22 @@
                         <input id="rpgm-speed" type="range"/>
                     </slider>
                 </setting>
+            </tab-content>
+
+            <tab-content tab="items">
+                <item-list>
+                </item-list>
+                <item-info>
+                    <top>
+                        <name>w</name>
+                        <desc>Bii</desc>
+                        <span>Price: <price>0</price></span>
+                    </top>
+                    <setting>
+                        <s-label>Amount</s-label>
+                        <input id="rpgm-item-amount" type="number"/>
+                    </setting>
+                </item-info>
             </tab-content>
         </content>
         <script src="popup.js"></script>

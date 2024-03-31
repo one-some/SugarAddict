@@ -81,7 +81,8 @@ titlebar right span { border-left: 1px solid gray; }
 
 content {
     display: flex;
-    flex-grow: 1;
+    min-height: 0;
+    height: 100%;
 }
 
 tabs {
@@ -110,7 +111,15 @@ tab:hover {
 }
 
 tab-content {
+    display: none;
     flex-grow: 1;
+}
+
+tab-content.selected {
+    display: initial;
+}
+
+tab-content[tab="misc"] {
     padding: 8px;
 }
 
@@ -119,4 +128,36 @@ setting {
     display: flex;
     justify-content: space-between;
     margin-bottom: 6px;
+}
+
+tab-content[tab="items"].selected {
+    display: flex;
+}
+
+item-list {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+item-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 40%;
+}
+
+item-info top {
+    display: flex;
+    flex-direction: column;
+}
+
+item-list item {
+    cursor: pointer;
+    background-color: #ffffff12;
+}
+
+item-list item:hover {
+    background-color: #ffffff22;
 }
