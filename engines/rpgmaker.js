@@ -9,6 +9,7 @@ const noclipButton = $el("#rpgm-noclip");
 const encountersButton = $el("#rpgm-encounters");
 const speedInput = $el("#rpgm-speed");
 const itemList = $el("item-list");
+const itemAmountInput = $el("#rpgm-item-amount");
 
 async function init() {
     const gameName = await Exec.pageExec(() => $dataSystem.gameTitle);
@@ -16,15 +17,20 @@ async function init() {
     gameNameLabel.title = gameName;
 
 
+    let selectedItemId = null;
     let filledItem = false;
     const items = await Exec.pageExec(() => $dataItems);
     for (const item of items) {
         if (!item) continue;
         const el = $e("item", itemList, {innerText: item.name});
-        el.addEventListener("click", function() {
+        el.addEventListener("click", async function() {
             $el("item-info name").innerText = item.name;
             $el("item-info desc").innerText = item.description;
             $el("item-info price").innerText = item.price;
+            itemAmountInput.value = (
+                await Exec.pageExec((item) => $gameParty._items[item], item.id)
+            ) || 0;
+            selectedItemId = item.id;
         });
 
         if (!filledItem) {
@@ -32,6 +38,12 @@ async function init() {
             filledItem = true;
         }
     }
+
+    itemAmountInput.addEventListener("change", async function() {
+        const amount = parseInt(this.value);
+        await Exec.pageExec((item, amount) => $gameParty._items[item] = amount, selectedItemId, amount);
+    });
+
 }
 
 async function update() {
