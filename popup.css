@@ -164,3 +164,8 @@ item-list item {
 item-list item:hover {
     background-color: #ffffff22;
 }
+
+inst {
+    font-size: 12px;
+    display: block;
+}

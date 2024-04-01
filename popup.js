@@ -49,9 +49,10 @@ for (const [i, tab] of Object.entries(document.querySelectorAll("tab"))) {
 
         const tabName = tab.getAttribute("tab");
         for (const contentEl of document.querySelectorAll("tab-content")) {
-            contentEl.classList.toggle(
-                "selected",
-                contentEl.getAttribute("tab") === tabName
+            const selected = contentEl.getAttribute("tab") === tabName;
+            contentEl.classList.toggle("selected", selected);
+            if (selected) contentEl.dispatchEvent(
+                new CustomEvent("show")
             );
         }
     });

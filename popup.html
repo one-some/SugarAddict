@@ -20,7 +20,7 @@
                 <tab tab="party">Party</tab>
                 <tab tab="items">Items</tab>
                 <tab tab="variables">Variables</tab>
-                <tab tab="map">Map</tab>
+                <tab tab="map" default>Map</tab>
                 <tab tab="decomp">Decomp</tab>
             </tabs>
             <tab-content tab="misc">
@@ -72,6 +72,10 @@
                         <input id="rpgm-item-amount" type="number"/>
                     </setting>
                 </item-info>
+            </tab-content>
+
+            <tab-content tab="map">
+                <div id="rpgm-event-info"></div>
             </tab-content>
         </content>
         <script src="popup.js"></script>
