@@ -28,12 +28,15 @@ input:focus {
     outline: 1px solid blue;
 }
 
-toggle-button {
+toggle-button,
+s-button {
     padding: 4px;
     cursor: pointer;
-    background: #ff000088;
 }
 
+s-button { background: #0000ff88; }
+
+toggle-button { background: #ff000088; }
 toggle-button.on { background: #00ff0088; }
 
 slider {

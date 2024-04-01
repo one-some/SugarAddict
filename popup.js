@@ -22,9 +22,12 @@ for (const slider of document.querySelectorAll("slider")) {
 }
 
 for (const button of document.querySelectorAll("toggle-button")) {
+    button.enabled = button.classList.contains("on");
+
     button.addEventListener("click", function() {
         button.classList.toggle("on");
         const enabled = button.classList.contains("on");
+        this.enabled = enabled;
         this.innerText = enabled ? "Enabled" : "Disabled";
 
         button.dispatchEvent(new CustomEvent("toggle", {detail: {enabled: enabled}}));

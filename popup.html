@@ -16,9 +16,9 @@
         </titlebar>
         <content class="engine-rpgmaker">
             <tabs>
-                <tab tab="misc">Misc</tab>
+                <tab tab="misc" default>Misc</tab>
                 <tab tab="party">Party</tab>
-                <tab tab="items" default>Items</tab>
+                <tab tab="items">Items</tab>
                 <tab tab="variables">Variables</tab>
                 <tab tab="map">Map</tab>
                 <tab tab="decomp">Decomp</tab>
@@ -35,6 +35,10 @@
                     <toggle-button id="rpgm-noclip">Disabled</toggle-button>
                 </setting>
                 <setting>
+                    <s-label>Win Battle</s-label>
+                    <s-button id="rpgm-win-battle">Win Battle</s-button>
+                </setting>
+                <setting>
                     <!-- $gameSystem.disableEncounter()
  -->
                     <s-label>Encounters</s-label>
@@ -45,9 +49,13 @@
                     <s-label>Speed</s-label>
                     <slider>
                         <i-label>2.10</i-label>
-                        <input id="rpgm-speed" type="range"/>
+                        <input id="rpgm-speed" min="1" max="10" type="range"/>
                     </slider>
                 </setting>
+            </tab-content>
+
+            <tab-content tab="party">
+                baaa
             </tab-content>
 
             <tab-content tab="items">

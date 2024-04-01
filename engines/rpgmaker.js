@@ -1,4 +1,12 @@
 // https://kinoar.github.io/rmmv-doc-web/globals.html
+//
+//
+//
+//
+//
+//
+// $gameParty.members()[3].gainExp(10000220)
+// $gameSelfSwitches.setValue([mapId, eventID, 'A'], true)
 import { log, error } from "../log.js";
 import * as Exec from "../exec-util.js";
 import { $e, $el } from "../ui/util.js";
@@ -10,6 +18,7 @@ const encountersButton = $el("#rpgm-encounters");
 const speedInput = $el("#rpgm-speed");
 const itemList = $el("item-list");
 const itemAmountInput = $el("#rpgm-item-amount");
+const winButton = $el("#rpgm-win-battle");
 
 async function init() {
     const gameName = await Exec.pageExec(() => $dataSystem.gameTitle);
@@ -61,8 +70,12 @@ currencyInput.addEventListener("change", async function() {
     );
 });
 
-noclipButton.addEventListener("toggle", async function(event) {
-    await Exec.pageExec((noclip) => $gamePlayer.setThrough(noclip), event.detail.enabled);
+noclipButton.addEventListener("toggle", function(event) {
+    Exec.pageExec((noclip) => $gamePlayer.setThrough(noclip), event.detail.enabled);
+});
+
+winButton.addEventListener("click", function() {
+    Exec.pageExec(() => BattleManager.processVictory());
 });
 
 encountersButton.addEventListener("toggle", async function(event) {
@@ -87,5 +100,5 @@ speedInput.addEventListener("input", async function() {
     log("RPGMaker good!");
 
     init();
-    update();
+    setInterval(update, 500);
 })();
