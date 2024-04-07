@@ -1,4 +1,5 @@
 // https://kinoar.github.io/rmmv-doc-web/globals.html
+// https://gist.github.com/UserUnknownFactor/4e700940079109f2430078534f163504
 //
 //
 //
@@ -103,12 +104,38 @@ class Instruction {
         this.args = args;
     }
 
-    toString() {
-        let argStr = JSON.stringify(this.args);
-        if (typeof this.args === "object") {
-            argStr = Object.entries(this.args).map(k => `${k[0]}: ${JSON.stringify(k[1])}`).join(", ");
+    renderValue(parent, value) {
+        $e("ins-argval", parent, {type: typeof value, innerText: JSON.stringify(value)});
+    }
+
+    renderArgs(parent) {
+        if (this.args === undefined) return;
+
+        if (typeof this.args !== "object") {
+            this.renderValue(parent, this.args);
+            return;
         }
-        return `${this.name}(${argStr})`;
+
+        const argCount = Object.keys(this.args).length;
+        const multiline = argCount > 2;
+        for (const [i, [k, v]] of Object.entries(Object.entries(this.args))) {
+            // Yes bad but whatever
+            if (multiline) parent.insertAdjacentText("beforeend", "\n    ");
+
+            $e("ins-argname", parent, {innerText: k});
+            parent.insertAdjacentText("beforeend", ": ");
+            this.renderValue(parent, v);
+
+            const last = parseInt(i) === argCount - 1;
+            if (!last) parent.insertAdjacentText("beforeend", ", ");
+        }
+    }
+
+    toDOM(parent) {
+        $e("ins-funcname", parent, {innerText: this.name});
+        const argEl = $e("ins-args", parent, {innerText: "("});
+        this.renderArgs(argEl);
+        argEl.insertAdjacentText("beforeend", ")");
     }
 }
 
@@ -117,6 +144,22 @@ function decodeOp(signParam, value, isConst=true) {
     const val = isConst ? value : `Var[${value}]`;
 
     return `${sign} ${val}`;
+}
+
+function decodeMapLocation(map, x, y, isConst=true) {
+    if (isConst) {
+        return {
+            map: map,
+            x: x,
+            y: y,
+        };
+    }
+
+    return {
+        map: `Variable[${map}]`,
+        x: `Variable[${x}]`,
+        y: `Variable[${y}]`,
+    };
 }
 
 function decodeInstruction(inst) {
@@ -143,16 +186,26 @@ function decodeInstruction(inst) {
             return new Instruction("SelectItem", {
                 storeIn: params[0]
             });
+        case 108:
+            return new Instruction("Comment", params[0]);
         case 111:
             return new Instruction("ConditionalBranch", {
                 todo: "TODO"
             });
+        case 112:
+            return new Instruction("Loop");
+        case 113:
+            return new Instruction("BreakLoop");
+        case 115:
+            return new Instruction("ExitEventProcessing");
         case 117:
             return new Instruction("CommonEvent", {
                 id: params[0]
             });
         case 118:
             return new Instruction("Label", params[0]);
+        case 119:
+            return new Instruction("JumpToLabel", params[0]);
         case 121:
             return new Instruction("ControlSwitches", {
                 switch1: params[0],
@@ -249,11 +302,76 @@ function decodeInstruction(inst) {
             }
 
             return new Instruction("ControlVariable", args);
+        case 123:
+            return new Instruction("ControlSelfSwitch", {
+                target: params[0],
+                value: !!params[1]
+            });
         case 126:
             return new Instruction("ChangeItems", {
                 item: params[0],
                 change: decodeOp(params[1], params[3], params[2] === 0)
             });
+        case 129:
+            return new Instruction("ChangePartyMember", {
+                op: params[1] === 0 ? "+" : "-",
+                actor: params[0],
+                initalize: params[1] === 0 && params[2] === 1
+            });
+        case 134:
+            return new Instruction("ChangeSaveAccess", {
+                canAccess: !!params[0]
+            });
+        case 135:
+            return new Instruction("ChangeMenuAccess", {
+                canAccess: !!params[0]
+            });
+        case 137:
+            return new Instruction("ChangeFormationAccess", {
+                canAccess: !!params[0]
+            });
+        case 201:
+            return new Instruction("TransferPlayer", {
+                ...decodeMapLocation(
+                    params[1],
+                    params[2],
+                    params[3],
+                    params[0] === 0,
+                ),
+                direction: params[4]
+            });
+        case 205:
+            return new Instruction("SetMoveRoute", "[snip]");
+        case 211:
+            return new Instruction("ChangeTransparency", {
+                transparency: !params[0]
+            });
+        case 213:
+            return new Instruction("ShowBalloonIcon", {
+                icon: [
+                    "Exclamation",
+                    "Question",
+                    "Music Note",
+                    "Heart",
+                    "Anger",
+                    "Sweat",
+                    "Cobweb",
+                    "Silence",
+                    "Light Bulb",
+                    "Zzz"
+                ][params[1] - 1],
+                target: params[0],
+                wait: !!params[2],
+            });
+        case 214: return new Instruction("TemporarilyEraseEvent");
+        case 216:
+            return new Instruction("ChangePlayerFollowers", {
+                visible: params[0] === 0
+            });
+        case 221:
+            return new Instruction("ScreenFadeOut");
+        case 222:
+            return new Instruction("ScreenFadeIn");
         case 224:
             return new Instruction("ScreenFlash", {
                 color: params[0],
@@ -291,44 +409,93 @@ function decodeInstruction(inst) {
                 opacity: params[8],
                 duration: params[10]
             });
-        case 235:
-            return new Instruction("ErasePicture", params[0]);
-        case 241:
-            return new Instruction("PlayBGM", params[0]);
+        case 235: return new Instruction("ErasePicture", params[0]);
+        case 236:
+            return new Instruction("SetWeather", {
+                weather: params[0],
+                power: params[1],
+                frames: params[2],
+                wait: params[3]
+            });
+        case 241: return new Instruction("PlayBGM", params[0]);
         case 242:
             return new Instruction("FadeOutBGM", {
                 seconds: params[0]
             });
-        case 245:
-            return new Instruction("PlayBGS", params[0]);
+        case 243: return new Instruction("SaveBGM");
+        case 244: return new Instruction("ResumeBGM");
+        case 245: return new Instruction("PlayBGS", params[0]);
         case 246:
             return new Instruction("FadeOutBGS", {
                 seconds: params[0]
             });
-        case 249:
-            return new Instruction("PlayME", params[0]);
-        case 250:
-            return new Instruction("PlaySE", params[0]);
-        case 251:
-            return new Instruction("StopSE");
-        case 261:
-            return new Instruction("PlayMovie");
+        case 249: return new Instruction("PlayME", params[0]);
+        case 250: return new Instruction("PlaySE", params[0]);
+        case 251: return new Instruction("StopSE");
+        case 261: return new Instruction("PlayMovie");
+        case 301:
+            let troop = "map-designated";
+            switch (params[0]) {
+                case 0:
+                    troop = params[1];
+                    break;
+                case 1:
+                    // "Troop from xyz"
+                    troop = `Variable[${params[1]}]`;
+                    break;
+            }
+            return new Instruction("BattleProcessing", {
+                troop: troop
+            });
+        case 313:
+            return new Instruction("ChangeState", {
+                actorType: params[0],
+                actorId: params[1],
+                op: params[2] === 0 ? "+" : "-",
+                stateId: params[3],
+            });
+        case 314:
+            return new Instruction("RecoverAll", {
+                actorType: params[0],
+                actorId: params[1],
+            });
+        case 322:
+            return new Instruction("ChangeActorGraphic", {
+                actor: params[0],
+                character: params[1],
+                characterId: params[2],
+                face: params[3],
+                faceId: params[4],
+            });
         case 356:
             // Unofficial?
             return new Instruction("CallPluginCommand", params[0]);
         case 401:
             return new Instruction("ShowText", params[0]);
+        case 402:
+            return new Instruction("When", params[1]);
         case 404:
             return new Instruction("EndShowChoices");
         case 411:
             return new Instruction("ElseBranch");
         case 412:
             return new Instruction("EndConditionalBranch");
+        case 413:
+            return new Instruction("RepeatAbove");
+        case 505:
+            return new Instruction("MoveCommand");
+        case 601:
+            return new Instruction("IfWin");
+        case 602:
+            return new Instruction("IfEscape");
+        case 603:
+            return new Instruction("IfLose");
         case 604:
             return new Instruction("EndBattleResult");
         default:
             return new Instruction("Unknown", {
-                code: inst.code
+                code: inst.code,
+                params: params
             });
     }
 }
@@ -355,8 +522,12 @@ function representCondition(con, what) {
 
 function makeEventElement(dat, parent) {
     for (const [i, page] of Object.entries(dat.pages)) {
-        const pageCont = $e("div", parent, {innerText: `Page ${i}`});
-        const conditions = $e("div", parent, {innerText: "Conditions"});
+
+        $e("s-header", parent, {type: "page", innerText: `Page ${i}:`});
+        const pageCont = $e("nested-cont", parent, {type: "event"});
+
+        $e("s-header", pageCont, {type: "conditions", innerText: "Conditions:"});
+        const conditions = $e("nested-cont", pageCont, {type: "conditions"});
 
         for (const condKey of ["actor", "item", "selfSwitch", "switch1", "switch2", "variable"]) {
             const cond = representCondition(page.conditions, condKey);
@@ -364,11 +535,13 @@ function makeEventElement(dat, parent) {
             $e("span", conditions, {innerText: cond});
         }
 
-        const code = $e("div", parent, {innerText: "Instructions"});
+        $e("s-header", pageCont, {type: "instructions", innerText: "Instructions"});
+        const code = $e("nested-cont", pageCont, {type: "instructions"});
+
         for (const inst of page.list) {
             const decoded = decodeInstruction(inst);
             if (!decoded) continue;
-            $e("inst", code, {innerText: decoded});
+            decoded.toDOM($e("inst", code));
         }
     }
 }
@@ -389,12 +562,24 @@ async function updateEvents() {
     ));
 
     for (const dat of events) {
-        const cont = $e("div", eventCont, {innerText: dat.name});
-        makeEventElement(dat, cont);
+        const header = $e("s-header", eventCont, {type: "event", innerText: dat.name});
+        const cont = $e("nested-cont", eventCont, {type: "event", classes: ["hidden"]});
+        header.cacheValid = false;
+
+        header.addEventListener("click", function() {
+            const opening = cont.classList.contains("hidden");
+            if (!header.cacheValid && opening) {
+                header.style.cursor = "wait";
+                cont.innerHTML = "";
+                makeEventElement(dat, cont);
+                header.cacheValid = true;
+                header.style.cursor = "auto";
+            }
+            cont.classList.toggle("hidden", !opening);
+        });
     }
 
-    console.log(events);
-    $e("h1", eventCont, {innerText: "HELLO"});
+    //console.log(events);
 }
 
 $el('tab-content[tab="map"]').addEventListener("show", updateEvents);

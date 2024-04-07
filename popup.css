@@ -132,6 +132,7 @@ tab:hover {
 tab-content {
     display: none;
     flex-grow: 1;
+    overflow-y: auto;
 }
 
 tab-content.selected {
@@ -185,3 +186,29 @@ inst {
     font-size: 12px;
     display: block;
 }
+
+s-header {
+    display: block;
+    cursor: pointer;
+}
+
+s-header:hover {
+    background-color: #282828;
+}
+
+nested-cont {
+    display: block;
+    padding-left: 12px;
+}
+
+ins-args {
+    white-space: pre;
+}
+
+ins-funcname { color: lightcoral; }
+ins-args { color: #999999; }
+ins-argname { color: lightgray; }
+ins-argval { color: white; }
+ins-argval[type="number"] { color: lightgreen; }
+ins-argval[type="string"] { color: lightsalmon; }
+ins-argval[type="boolean"] { color: lightpink; }
