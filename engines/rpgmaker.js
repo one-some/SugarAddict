@@ -189,9 +189,129 @@ function decodeInstruction(inst) {
         case 108:
             return new Instruction("Comment", params[0]);
         case 111:
-            return new Instruction("ConditionalBranch", {
-                todo: "TODO"
-            });
+            const out = {};
+
+            switch (params[0]) {
+                // Switch
+                case 0:
+                    out.switchTarget = params[1];
+                    out.targetValue = !params[2];
+                    break;
+                // Variable
+                case 1:
+                    out.variableTarget = params[1];
+                    out.op = ["==", ">=", "<=", ">", "<", "!="][params[4]];
+                    out.targetValue = params[2] === 0 ? params[3] : `Variable[${params[3]}`;
+                    break;
+                // Self switch
+                case 2:
+                    out.selfSwitchTarget = param[2];
+                    out.targetValue = !params[2];
+                    break;
+                // Timer
+                case 3:
+                    out.seconds = params[1];
+                    out.orQuantifier = params[2] === 0 ? "more" : "less";
+                    break;
+                // Actor
+                case 4:
+                    out.actorId = params[1];
+                    switch (params[2]) {
+                        case 0:
+                            out.condition = "inParty";
+                            break;
+                        case 1:
+                            out.condition = "nameIs";
+                            out.targetValue = params[3];
+                            break;
+                        case 2:
+                            out.condition = "isClass";
+                            out.targetValue = params[3];
+                            break;
+                        case 3:
+                            out.condition = "knowsSkill";
+                            out.targetValue = params[3];
+                            break;
+                        case 4:
+                            out.condition = "equipsWeapon";
+                            out.targetValue = params[3];
+                            break;
+                        case 5:
+                            out.condition = "equipsArmor";
+                            out.targetValue = params[3];
+                            break;
+                        case 6:
+                            out.condition = "hasState";
+                            out.targetValue = params[3];
+                            break;
+                    }
+                    break;
+                // Enemy
+                case 5:
+                    out.enemyId = params[1];
+                    switch (params[2]) {
+                        case 0:
+                            out.condition = "isVisible";
+                            break;
+                        case 1:
+                            out.condition = "hasState";
+                            out.targetValue = params[3];
+                            break;
+                    }
+                    break;
+                // Character facing direction
+                case 6:
+                    out.characterId = params[1];
+                    out.direction = params[2];
+                    break;
+                case 7:
+                    out.condition = "gold";
+                    out.op = [">=", "<=", "<"][params[1]];
+                    out.targetValue = params[2];
+                    break;
+                case 8:
+                    out.item = params[1];
+                    break;
+                case 9:
+                    out.weapon = params[1];
+                    out.includeEquipped = !!params[2];
+                    break;
+                case 10:
+                    out.armor = params[1];
+                    out.includeEquipped = !!params[2];
+                    break;
+                case 11:
+                    out.buttonPressed = [
+                        "0",
+                        "1",
+                        "down",
+                        "3",
+                        "left",
+                        "5",
+                        "right",
+                        "7",
+                        "up",
+                        "9",
+                        "10",
+                        "A",
+                        "B",
+                        "C",
+                        "X",
+                        "Y",
+                        "Z",
+                        "L",
+                        "R"
+                    ][params[1]];
+                    break;
+                case 12:
+                    out.script = params[1];
+                    break;
+                case 13:
+                    out.inVehicle = params[1];
+                    break;
+            }
+
+            return new Instruction("ConditionalBranch", out);
         case 112:
             return new Instruction("Loop");
         case 113:
