@@ -333,6 +333,8 @@ function makeEventElement(dat, parent) {
 }
 
 async function updateEvents() {
+    eventCont.innerHTML = "";
+
     const events = await Exec.pageExec(() => $gameMap.events().map(
         function(event) {
             const dbEvent = event.event();
@@ -355,7 +357,6 @@ async function updateEvents() {
 }
 
 $el('tab-content[tab="map"]').addEventListener("show", updateEvents);
-
 
 // Init
 

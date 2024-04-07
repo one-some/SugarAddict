@@ -20,7 +20,7 @@
                 <tab tab="party">Party</tab>
                 <tab tab="items">Items</tab>
                 <tab tab="variables">Variables</tab>
-                <tab tab="map" default>Map</tab>
+                <tab tab="map">Map</tab>
                 <tab tab="decomp">Decomp</tab>
             </tabs>
             <tab-content tab="misc">
@@ -78,7 +78,12 @@
                 <div id="rpgm-event-info"></div>
             </tab-content>
         </content>
-        <script src="popup.js"></script>
+        <searchbar class="hidden">
+            <input id="search-target" placeholder="Search..."></input>
+            <s-button id="search-prev">Prev</s-button>
+            <s-button id="search-next">Next</s-button>
+        </searchbar>
+        <script type="module" src="popup.js"></script>
         <script type="module" src="engines/rpgmaker.js"></script>
     </body>
 </html>

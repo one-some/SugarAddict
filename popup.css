@@ -28,6 +28,10 @@ input:focus {
     outline: 1px solid blue;
 }
 
+.hidden {
+    display: none;
+}
+
 toggle-button,
 s-button {
     padding: 4px;
@@ -64,6 +68,18 @@ titlebar span {
 
 titlebar left span { border-right: 1px solid gray; }
 titlebar right span { border-left: 1px solid gray; }
+
+searchbar {
+    background-color: #ffffff44;
+    display: flex;
+    gap: 2px;
+}
+
+searchbar input {
+    font-family: monospace;
+    flex-grow: 1;
+}
+searchbar s-button { background-color: #282828; }
 
 #engine {
     background-color: #ff6a0082;

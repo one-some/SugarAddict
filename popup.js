@@ -1,3 +1,5 @@
+import { $e, $el } from "./ui/util.js";
+
 document.addEventListener("keydown", function(event) {
     if (event.key !== "Enter") return;
     if (document.activeElement.nodeName !== "INPUT") return;
@@ -60,3 +62,18 @@ for (const [i, tab] of Object.entries(document.querySelectorAll("tab"))) {
     // Bah, humbug!
     if (tab.hasAttribute("default")) tab.click();
 }
+
+document.addEventListener("keydown", function(event) {
+    if (!event.ctrlKey) return;
+    if (event.key.toUpperCase() !== "F") return;
+    event.preventDefault();
+    $el("searchbar").classList.remove("hidden");
+    $el("searchbar input").focus();
+});
+
+$el("searchbar input").addEventListener("input", function() {
+    // TODO: Cross-tab search?
+    const activeTab = $el("tab-content.selected");
+    if (!activeTab) return;
+    console.log(this.value);
+});
