@@ -112,6 +112,13 @@ class Instruction {
     }
 }
 
+function decodeOp(signParam, value, isConst=true) {
+    const sign = !signParam ? "+" : "-";
+    const val = isConst ? value : `Var[${value}]`;
+
+    return `${sign} ${val}`;
+}
+
 function decodeInstruction(inst) {
     const params = inst.parameters;
     // https://pastebin.com/raw/JyRTdq0b
@@ -139,6 +146,10 @@ function decodeInstruction(inst) {
         case 111:
             return new Instruction("ConditionalBranch", {
                 todo: "TODO"
+            });
+        case 117:
+            return new Instruction("CommonEvent", {
+                id: params[0]
             });
         case 118:
             return new Instruction("Label", params[0]);
@@ -238,6 +249,24 @@ function decodeInstruction(inst) {
             }
 
             return new Instruction("ControlVariable", args);
+        case 126:
+            return new Instruction("ChangeItems", {
+                item: params[0],
+                change: decodeOp(params[1], params[3], params[2] === 0)
+            });
+        case 224:
+            return new Instruction("ScreenFlash", {
+                color: params[0],
+                frames: params[1],
+                wait: params[2],
+            });
+        case 225:
+            return new Instruction("ScreenShake", {
+                power: params[0],
+                speed: params[1],
+                frames: params[2],
+                wait: params[3],
+            });
         case 230:
             return new Instruction("Wait", {
                 frames: params[0]
@@ -264,8 +293,18 @@ function decodeInstruction(inst) {
             });
         case 235:
             return new Instruction("ErasePicture", params[0]);
+        case 241:
+            return new Instruction("PlayBGM", params[0]);
+        case 242:
+            return new Instruction("FadeOutBGM", {
+                seconds: params[0]
+            });
         case 245:
             return new Instruction("PlayBGS", params[0]);
+        case 246:
+            return new Instruction("FadeOutBGS", {
+                seconds: params[0]
+            });
         case 249:
             return new Instruction("PlayME", params[0]);
         case 250:
@@ -281,6 +320,8 @@ function decodeInstruction(inst) {
             return new Instruction("ShowText", params[0]);
         case 404:
             return new Instruction("EndShowChoices");
+        case 411:
+            return new Instruction("ElseBranch");
         case 412:
             return new Instruction("EndConditionalBranch");
         case 604:
