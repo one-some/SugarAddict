@@ -429,7 +429,7 @@ function getPassages() {
 
     if (SugarCube.Story.passages !== undefined) return SugarCube.Story.passages;
 
-    return SugarCube.Story.getAllRegular();
+    return (SugarCube.Story.getAllRegular ?? SugarCube.Story.getNormals)();
     // let ret = {};
     // for (const dat of SugarCube.Story.lookupWith(
     //     window.wrappedJSObject.SA_PATCH_TRUE

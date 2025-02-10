@@ -1,3 +1,5 @@
+//\[renpy.mark_image_seen(x) for x in renpy.list_images()]
+
 const Module = window.wrappedJSObject.Module;
 let RenpyExec = window.wrappedJSObject.renpy_exec;
 let RenpyGet = window.wrappedJSObject.renpy_get;
@@ -391,6 +393,8 @@ export async function initRenPyWeb() {
 for label in renpy.exports.get_all_labels():
     renpy.game.persistent._seen_ever[label] = True
 `);
+        execPy("[renpy.mark_image_seen(x) for x in renpy.list_images()]");
+
     });
 
     const markAllUnseen = $e("div", tabs.home.content, {
