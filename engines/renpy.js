@@ -1,17 +1,11 @@
 //\[renpy.mark_image_seen(x) for x in renpy.list_images()]
 
 const Module = window.wrappedJSObject.Module;
-let RenpyExec = window.wrappedJSObject.renpy_exec;
-let RenpyGet = window.wrappedJSObject.renpy_get;
 
+let RenpyExec;
+let RenpyGet;
 let history = [];
 let historyPointer = 0;
-
-const ExecMethods = {
-    RENPY_EXEC: "RENPY_EXEC",
-    PYRUN_SIMPLESTRING: "PYRUN_SIMPLESTRING",
-};
-let execMethod;
 
 function consoleWrite(out) {
     /* Stub */
@@ -39,29 +33,8 @@ function noProp(event) {
     event.stopPropagation();
 }
 
-function isEngineOutputAnnoying(text) {
-    let t = text.toLowerCase();
-
-    for (const annoying in [
-        "syncfs operations in flight at once",
-
-        // Ignore exceptions from unwritable DBs due to what I assume is private mode
-        "a mutation operation was attempted on",
-    ]) {
-        continue;
-        if (t.includes(annoying.toLowerCase())) {
-            console.log("ANNOYING!");
-            return true;
-        }
-    }
-
-    return false;
-}
-
 exportFunction(
     function (text) {
-        if (isEngineOutputAnnoying(text)) return;
-
         // window.wrappedJSObject.SA_OLDOUT(text);
         console.log(text);
         for (const listener of outputListeners) {
@@ -74,8 +47,6 @@ exportFunction(
 
 exportFunction(
     function (text) {
-        if (isEngineOutputAnnoying(text)) return;
-
         window.wrappedJSObject.SA_OLDERR(text);
         for (const listener of errorListeners) {
             listener(text);
@@ -88,7 +59,7 @@ exportFunction(
 // Run in Python VM
 function execRawPy(code) {
     setTimeout(async function () {
-        await RenpyExec(code);
+        await RenpyExec(code).catch(e => console.error(code, e));
     }, 0);
 }
 
@@ -124,21 +95,77 @@ function string2stack(string) {
 
 function initPythonVM() {
     // Be careful; no f-strings here. Engine may be running on python2.
-    if (execMethod === ExecMethods.RENPY_EXEC) {
-        // Patch json to not error when trying to process advanced stuff
-        execRawPy(
-            `import functools;json.dumps=functools.partial(json.dumps, default=lambda x: "SA_ADV|"+x.__class__.__name__)`
-        );
-        // execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=str)`);
-    } else {
-        // Experimental optimizations
-        execRawPy("import json");
-        execRawPy("import renpy");
-        execRawPy("renpy.get_all_labels = renpy.exports.get_all_labels");
-    }
+    execRawPy("import json");
+    execRawPy("import renpy");
+    execRawPy("renpy.get_all_labels = renpy.exports.get_all_labels");
 
     // Patch json to not error when trying to process advanced stuff
-    execRawPy(`import functools;json.dumps=functools.partial(json.dumps, default=lambda x: "SA_ADV|"+x.__class__.__name__)`);
+    execRawPy(`
+try:
+    import builtins as _b
+except ImportError:
+    import __builtin__ as _b
+def _sa_short_repr(o, limit=200, _b=_b):
+    try:
+        r = _b.repr(o)
+    except Exception as e:
+        return "<repr error: " + _b.str(e) + ">"
+    if _b.len(r) > limit:
+        r = r[:limit] + "..."
+    return r
+def _sa_safe_len(o, _b=_b):
+    try:
+        return _b.len(o)
+    except Exception:
+        return None
+def _sa_dump_impl(obj, max_depth=2, _b=_b):
+    refs = renpy.python.store_dicts["store"].setdefault("_sa_refs", {})
+    if _b.len(refs) > 500:
+        for k in _b.list(refs.keys())[:250]:
+            refs.pop(k, None)
+    seen = _b.set()
+    def _looks_like_mapping(o):
+        return (_b.hasattr(o, "items") and _b.hasattr(o, "keys") and _b.hasattr(o, "__getitem__") and not _b.isinstance(o, _b.str))
+    def _looks_like_sequence(o):
+        return (_b.hasattr(o, "__iter__") and _b.hasattr(o, "__len__") and not _b.isinstance(o, (_b.str, _b.bytes)) and not _looks_like_mapping(o))
+    def walk(o, depth):
+        if o is None or _b.isinstance(o, _b.bool) or _b.isinstance(o, (_b.int, _b.float, _b.str)):
+            return o
+        oid = _b.id(o)
+        if oid in seen:
+            return {"__sa__": "cycle", "type": _b.type(o).__name__}
+        seen.add(oid)
+        if depth >= max_depth:
+            refs[oid] = o
+            return {"__sa__": "deep", "type": _b.type(o).__name__, "repr": renpy.sa_short_repr(o), "id": oid, "len": _sa_safe_len(o)}
+        if _looks_like_mapping(o):
+            try:
+                return {(_b.str(k) if not _b.isinstance(k, _b.str) else k): walk(v, depth + 1) for k, v in o.items()}
+            except Exception:
+                pass
+        if _b.isinstance(o, _b.tuple):
+            return {"__sa__": "tuple", "items": [walk(v, depth + 1) for v in o]}
+        if _b.isinstance(o, (_b.set, _b.frozenset)):
+            return {"__sa__": "set", "items": [walk(v, depth + 1) for v in o]}
+        if _b.isinstance(o, _b.bytes):
+            return {"__sa__": "bytes", "len": _b.len(o), "preview": o[:64].decode("latin-1", "replace")}
+        if _looks_like_sequence(o):
+            try:
+                return [walk(v, depth + 1) for v in o]
+            except Exception:
+                pass
+        refs[oid] = o
+        fields = []
+        try:
+            fields = [k for k in _b.dir(o) if not k.startswith("_")][:50]
+        except Exception:
+            pass
+        return {"__sa__": "opaque", "type": _b.type(o).__name__, "module": _b.getattr(_b.type(o), "__module__", "?"), "repr": renpy.sa_short_repr(o), "id": oid, "fields": fields}
+    return walk(obj, 0)
+renpy.sa_short_repr = _sa_short_repr
+renpy.sa_safe_len = _sa_safe_len
+renpy.sa_dump = _sa_dump_impl
+`);
 
     execRawPy(`print("""[SugarAddict] RenPy VM hijack success, have fun!
 [SugarAddict] renpy.python.store_dicts["store"] is bound to renpy.pri_store for conveinence. Or... just use the variable editor.
@@ -148,33 +175,33 @@ function initPythonVM() {
 }
 
 async function getRenpyVars() {
-    return await RenpyGet("{k: renpy.python.store_dicts['store'][k] for k in renpy.python.store_dicts['store'].ever_been_changed if k in renpy.python.store_dicts['store']}");
+    return await RenpyExec(`
+_store = renpy.python.store_dicts["store"]
+_changed = {
+    k: _store[k] for k in _store.ever_been_changed
+    if k in _store and not k.startswith("_")
+}
+result = renpy.sa_dump(_changed, max_depth=2)
+`);
 }
 
 async function getSingleVariable(keyChain) {
-    let nChain = [];
-    for (const k of keyChain) {
-        if (isNaN(k)) {
-            nChain.push(k);
-        } else {
-            nChain.push(Number(k));
-        }
-    }
-
-    let out = await RenpyExec(`
-base = renpy.python.store_dicts["store"]
-j_dat = base64.b64decode("${btoa(JSON.stringify(nChain))}").decode("utf-8")
-for part in json.loads(j_dat):
-    if hasattr(base, "__getitem__"):
-        base = base[part]
-    else:
-        base = getattr(base, part)
-result = base`);
-    return out;
+    const path_b64 = btoa(JSON.stringify(keyChain));
+    return await RenpyExec(`
+import base64, json
+_path = json.loads(base64.b64decode("${path_b64}").decode("utf-8"))
+_base = renpy.python.store_dicts["store"]
+for _part in _path:
+    try:
+        _base = _base[_part]
+    except (KeyError, TypeError, IndexError):
+        _base = getattr(_base, _part)
+result = renpy.sa_dump(_base, max_depth=2)
+`);
 }
 
 async function getRenpyLabels() {
-    return await RenpyGet("list(renpy.get_all_labels())");
+    return await RenpyGet("result = sorted(L for L in renpy.get_all_labels() if not L.startswith('_'))");
 }
 
 async function getPyObjDetails(path) {
@@ -193,14 +220,8 @@ async function getPyObjDetails(path) {
             }
         }
     }
-    // const bodyIndexChain = pathParts.length ? "." + pathParts.join(".") : "";
     log(bodyIndexChain);
 
-    // let childrenValues = await RenpyGet(
-    //     `{k: getattr(renpy.python.store_dicts["store"]["${headName}"]${bodyIndexChain}, k) ` +
-    //     `for k in dir(renpy.python.store_dicts["store"]["${headName}"]${bodyIndexChain}) ` +
-    //     `if not (k.startswith("__") and k.endswith("__"))}`
-    // );
     let childrenKeys = await RenpyGet(
         `[k for k in dir(renpy.python.store_dicts["store"]["${headName}"]${bodyIndexChain}) ` +
         `if not (k.startswith("__") and k.endswith("__"))]`
@@ -236,6 +257,7 @@ function bootstrapExec() {
 
                 e.name = result.name;
                 e.traceback = result.traceback;
+                console.error("ouch!!", result.name, result.error, result.traceback);
                 cur_cmd.reject(e);
             } else {
                 cur_cmd.resolve(result.data);
@@ -256,19 +278,28 @@ function bootstrapExec() {
         // the script content as a Python string
         const script_b64 = btoa(cur_cmd.py_script);
         const wrapper = 'import base64, emscripten, json, traceback;\n'
-            + 'try:'
-            + "result = None;"
-            + "exec(base64.b64decode('" + script_b64 + "').decode('utf-8'));"
-            + "result = json.dumps(dict(data=result));"
-            + "\n"
-            + "except Exception as e:"
-            + "result = json.dumps(dict(error=str(e), name=e.__class__.__name__, traceback=traceback.format_exc()));"
-            + "\n"
-            + "emscripten.run_script('_renpy_cmd_callback(%s)' % (result,));";
+            + 'try:\n'
+            + " result = None\n"
+            + " exec(base64.b64decode('" + script_b64 + "').decode('utf-8'))\n"
+            + " try:\n"
+            + "  _payload = json.dumps(dict(data=result))\n"
+            + " except TypeError:\n"
+            + "  _payload = json.dumps(dict(data=renpy.sa_dump(result)))\n"
+            + "except Exception as e:\n"
+            + " _payload = json.dumps(dict(error=str(e), name=e.__class__.__name__, traceback=traceback.format_exc()))\n"
+            + "emscripten.run_script('_renpy_cmd_callback(%s)' % (_payload,))";
 
-
-        let pointer = string2stack(wrapper);
-        let ret = Module._PyRun_SimpleString(pointer);
+        if (Module._PyRun_SimpleString) {
+            const saved = window.wrappedJSObject.stackSave();
+            try {
+                const  pointer = string2stack(wrapper);
+                Module._PyRun_SimpleString(pointer);
+            } finally {
+                window.wrappedJSObject.stackRestore(saved);
+            }
+        } else {
+            window.wrappedJSObject._renpy_cmd = wrapper;
+        }
     }
 
     /** Add a command to the queue and execute it if the queue was empty. */
@@ -317,15 +348,8 @@ function bootstrapExec() {
 
 export async function initRenPyWeb() {
     log("Initializing Ren'PyWeb backend...");
-    execMethod = RenpyExec
-        ? ExecMethods.RENPY_EXEC
-        : ExecMethods.PYRUN_SIMPLESTRING;
-    log(`Found execmethod ${execMethod}`);
 
-    if (execMethod === ExecMethods.PYRUN_SIMPLESTRING) {
-        log("PYRUN_SIMPLESTRING: Bootstrapping exec functions");
-        bootstrapExec();
-    }
+    bootstrapExec();
 
     const tabs = await makeWindow({
         home: { title: "Home", icon: "🏠" },
@@ -338,22 +362,12 @@ export async function initRenPyWeb() {
     /* Home */
     $e("span", tabs.home.content, { innerText: "Info", classes: ["sa-header"] });
 
-    if (execMethod === ExecMethods.RENPY_EXEC) {
-        $e("span", tabs.home.content, {
-            innerText:
-                "Exec Method: renpy_exec\nNewer RenPy version; using native exec hooks.",
-            classes: ["sa-header"],
-            "style.color": "green",
-        });
-    } else if (execMethod === ExecMethods.PYRUN_SIMPLESTRING) {
-        $e("span", tabs.home.content, {
-            innerText: "Exec Method: PyRun_SimpleString. Older RenPy version; sketchy exec hax",
-            classes: ["sa-header"],
-            "style.color": "gold",
-        });
-    } else {
-        alert("What");
-    }
+    $e("span", tabs.home.content, {
+        innerText:
+            "Exec Method: own rp_exec",
+        classes: ["sa-header"],
+        "style.color": "green",
+    });
 
     $e("span", tabs.home.content, {
         innerText: "Memory Management",
@@ -428,7 +442,7 @@ for label in renpy.exports.get_all_labels():
     });
     initPythonVM();
 
-    const pyInput = $e("input", tabs.console.content);
+    const pyInput = $e("textarea", tabs.console.content);
     pyInput.addEventListener("keydown", function (event) {
         event.stopPropagation();
 
@@ -454,7 +468,7 @@ for label in renpy.exports.get_all_labels():
             }
         }
 
-        if (event.key !== "Enter") return;
+        if (event.key !== "Enter" || !event.ctrlKey) return;
         event.preventDefault();
 
         let command = pyInput.value;
@@ -476,12 +490,37 @@ for label in renpy.exports.get_all_labels():
 
     function setVariable(keyChain, v) {
         log("Setting", keyChain, v);
-        let enc = JSON.stringify(v);
 
-        // TODO: Support numbered index for list (this casts it to string like a dict)
-        let indexChain = keyChain.map((key) => `["${key}"]`).join();
+        if (containsSaEnvelope(v)) {
+            log("wont write");
+            return;
+        }
 
-        execRawPy(`renpy.python.store_dicts["store"]${indexChain} = json.loads(base64.b64decode("${btoa(enc)}").decode("utf-8"))`);
+        const path_b64 = btoa(JSON.stringify(keyChain));
+        const value_b64 = btoa(JSON.stringify(v));
+        execRawPy(`
+import base64, json
+_path = json.loads(base64.b64decode("${path_b64}").decode("utf-8"))
+_value = json.loads(base64.b64decode("${value_b64}").decode("utf-8"))
+_base = renpy.python.store_dicts["store"]
+for _part in _path[:-1]:
+    try:
+        _base = _base[_part]
+    except (KeyError, TypeError, IndexError):
+        _base = getattr(_base, _part)
+_last = _path[-1]
+try:
+    _base[_last] = _value
+except (TypeError, KeyError):
+    setattr(_base, _last, _value)
+`);
+    }
+
+    function containsSaEnvelope(v) {
+        if (v === null || typeof v !== "object") return false;
+        if (typeof v.__sa__ === "string") return true;
+        if (Array.isArray(v)) return v.some(containsSaEnvelope);
+        return Object.values(v).some(containsSaEnvelope);
     }
 
     function logVariableChange(k, v) {
@@ -528,22 +567,30 @@ for label in renpy.exports.get_all_labels():
         id: "sa-passage-container",
     });
     const labelSearchBar = $e("input", tabs.labels.content);
-    const labels = await getRenpyLabels();
-    log("Labels:", labels);
 
-    for (const labelName of labels) {
-        let labelEl = $e("div", labelContainer, { classes: ["sa-passage"] });
-        $e("span", labelEl, { innerText: labelName, classes: ["sa-passage-name"] });
-        let jumpButton = $e("span", labelEl, {
-            innerText: "Jump",
-            classes: ["sa-clickable"],
-        });
+    setInterval(async function() {
+        labelContainer.innerHTML = "";
+        const labels = await getRenpyLabels();
+        console.log(labels);
 
-        jumpButton.addEventListener("click", function () {
-            //execRawPy(`renpy.exports.call_in_new_context("${labelName}")`)
-            execRawPy(`renpy.exports.jump("${labelName}")`);
-        });
-    }
+        for (const labelName of labels) {
+            let labelEl = $e("div", labelContainer, { classes: ["sa-passage"] });
+            $e("span", labelEl, { innerText: labelName, classes: ["sa-passage-name"] });
+            let jumpButton = $e("span", labelEl, {
+                innerText: "Jump",
+                classes: ["sa-clickable"],
+            });
+
+            jumpButton.addEventListener("click", function () {
+                execRawPy(
+                    "def _fire():\n" +
+                    "    renpy.config.periodic_callbacks.remove(_fire)\n" + 
+                    `    renpy.jump("${labelName}")\n` +
+                    "renpy.config.periodic_callbacks.append(_fire)"
+                );
+            });
+        }
+    }, 2500);
 
     // Ren'Py <html> gobbles events!!
     labelSearchBar.addEventListener("keydown", noProp);
@@ -574,11 +621,6 @@ for label in renpy.exports.get_all_labels():
             }
         }
 
-        if (i % 2 === 0) {
-            passageContainer.classList.add("sa-shiny");
-        } else {
-            passageContainer.classList.remove("sa-shiny");
-        }
         updateLabelVisualPolarity();
     });
 }

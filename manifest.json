@@ -20,7 +20,7 @@
     {
       "matches": [
         "*://*/*",
-        "file://*/*"
+        "file:///*"
       ],
       "js": [
         "ui/util.js",
@@ -29,5 +29,9 @@
         "main.js"
       ]
     }
+  ],
+  "permissions": [
+    "activeTab",
+    "file:///*"
   ]
 }

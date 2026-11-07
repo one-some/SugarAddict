@@ -11,7 +11,8 @@
     color: rgb(255, 187, 0);
 }
 
-#sa-window-container input {
+#sa-window-container input, #sa-window-container textarea{
+    width: 100%;
     outline: none;
     background-color: #313131;
     appearance: none;
